@@ -76,7 +76,16 @@ get_mysql_option(sql::mysql::MySQL_Connection_Options opt)
   case sql::mysql::MYSQL_OPT_WRITE_TIMEOUT: return ::MYSQL_OPT_WRITE_TIMEOUT;
   case sql::mysql::MYSQL_OPT_USE_RESULT: return ::MYSQL_OPT_USE_RESULT;
   case sql::mysql::MYSQL_REPORT_DATA_TRUNCATION: return ::MYSQL_REPORT_DATA_TRUNCATION;
-  case sql::mysql::MYSQL_OPT_RECONNECT: return ::MYSQL_OPT_RECONNECT;
+  case sql::mysql::MYSQL_OPT_RECONNECT:
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID < 80300
+    return ::MYSQL_OPT_RECONNECT;
+#else
+  {
+    std::string errorOption("MYSQL_OPT_RECONNECT");
+    throw sql::SQLUnsupportedOptionException("Option is not supported",
+      errorOption);
+  }
+#endif
   case sql::mysql::MYSQL_PLUGIN_DIR: return ::MYSQL_PLUGIN_DIR;
   case sql::mysql::MYSQL_DEFAULT_AUTH: return ::MYSQL_DEFAULT_AUTH;
   case sql::mysql::MYSQL_OPT_BIND: return ::MYSQL_OPT_BIND;
@@ -177,6 +186,15 @@ MySQL_NativeConnectionWrapper::connect(const ::sql::SQLString & host,
                   const ::sql::SQLString & socket_or_pipe,
                   unsigned long			client_flag)
 {
+  m_host = host;
+  m_user = user;
+  m_passwd = passwd;
+  m_db = db;
+  m_port = port;
+  m_socket_or_pipe = socket_or_pipe;
+  m_client_flag = client_flag;
+  m_dns_srv = false;
+
   return (NULL != api->real_connect(mysql, nullIfEmpty(host), user.c_str(),
                   nullIfEmpty(passwd),
                   nullIfEmpty(db), port,
@@ -193,6 +211,13 @@ MySQL_NativeConnectionWrapper::connect_dns_srv(const ::sql::SQLString & host,
                   const ::sql::SQLString & db,
                   unsigned long			client_flag)
 {
+  m_host = host;
+  m_user = user;
+  m_passwd = passwd;
+  m_db = db;
+  m_client_flag = client_flag;
+  m_dns_srv = true;
+
   return (NULL != api->real_connect_dns_srv(mysql, nullIfEmpty(host), user.c_str(),
                   nullIfEmpty(passwd),
                   nullIfEmpty(db), client_flag));
@@ -318,6 +343,13 @@ MySQL_NativeConnectionWrapper::next_result()
 int
 MySQL_NativeConnectionWrapper::options(::sql::mysql::MySQL_Connection_Options option, const void * value)
 {
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+  if (option == MYSQL_OPT_RECONNECT) {
+    reconnect = *(bool*)value;
+    // For reconnect option we don't pass the call to api.
+    return 0;
+  }
+#endif
   return api->options(mysql, get_mysql_option(option), value);
 }
 /* }}} */
@@ -378,6 +410,14 @@ MySQL_NativeConnectionWrapper::options(::sql::mysql::MySQL_Connection_Options op
 int
 MySQL_NativeConnectionWrapper::get_option(::sql::mysql::MySQL_Connection_Options option, const void * value)
 {
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+  if (option == MYSQL_OPT_RECONNECT) {
+    *(bool*)value = reconnect;
+    // For reconnect option we don't pass the call to api.
+    return 0;
+  }
+#endif
+
   return api->get_option(mysql, get_mysql_option(option), value);
 }
 /* }}} */
@@ -506,7 +546,25 @@ MySQL_NativeConnectionWrapper::query(const SQLString & stmt_str)
 int
 MySQL_NativeConnectionWrapper::ping()
 {
-  return api->ping(mysql);
+  int res = api->ping(mysql);
+
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+  if (res && reconnect) {
+    // Try reconnecting if could not ping and reconnect
+    // option is set.
+    bool connect_result = !m_dns_srv ?
+            connect(m_host, m_user, m_passwd, m_db, m_port,
+                    m_socket_or_pipe, m_client_flag)
+            :
+            connect_dns_srv(m_host, m_user, m_passwd, m_db,
+                    m_client_flag);
+    // If connected return success, otherwise let ping()
+    // return the proper error.
+    res = connect_result ? 0 : api->ping(mysql);
+  }
+#endif
+
+  return res;
 }
 /* }}} */
 

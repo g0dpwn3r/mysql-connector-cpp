@@ -214,7 +214,11 @@ void connection::getClientOption()
 
         output=(static_cast<bool *> (&output_value));
         con->getClientOption("OPT_RECONNECT", output);
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+        ASSERT_EQUALS(false, output_value);
+#else
         ASSERT_EQUALS(input_value, output_value);
+#endif
       }
       catch (sql::SQLException &e)
       {

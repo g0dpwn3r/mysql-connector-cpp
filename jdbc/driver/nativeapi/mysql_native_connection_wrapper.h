@@ -59,6 +59,16 @@ class MySQL_NativeConnectionWrapper : public NativeConnectionWrapper
   /* api should be declared before mysql here */
   std::shared_ptr<IMySQLCAPI> api;
 
+  bool reconnect = false;
+  ::sql::SQLString m_host;
+  ::sql::SQLString m_user;
+  ::sql::SQLString m_passwd;
+  ::sql::SQLString m_db;
+  unsigned int     m_port;
+  ::sql::SQLString m_socket_or_pipe;
+  unsigned long    m_client_flag;
+  bool             m_dns_srv = false;
+
 #if (MYCPPCONN_STATIC_MYSQL_VERSION_ID > 80004)
 struct MYSQL* mysql;
 #else
