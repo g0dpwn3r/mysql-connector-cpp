@@ -68,6 +68,7 @@ public:
     TEST_CASE(getWarnings);
     TEST_CASE(blob);
     TEST_CASE(executeQuery);
+    TEST_CASE(queryAttributes);
   }
 
   /**
@@ -141,6 +142,11 @@ public:
    * TODO - the test does focus on code coverage not functionality
    */
   void executeQuery();
+
+  /**
+   * Check query attributes with prepared statements
+   */
+  void queryAttributes();
 
 
 };
