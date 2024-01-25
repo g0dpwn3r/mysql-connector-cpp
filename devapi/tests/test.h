@@ -35,6 +35,11 @@
 #include <mysqlx/xdevapi.h>
 #include <iostream>
 
+#ifdef TLS_CIPHERS_H
+#include <tls_ciphers.h>
+#endif
+
+
 namespace mysqlx {
 namespace test {
 
