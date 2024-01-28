@@ -75,11 +75,8 @@ class CPPCONN_PUBLIC_FUNC MySQL_Driver : public sql::Driver
   ::sql::Fido_Callback fido_callback_store;
 
   /*
-    Callback function to be called by WebAuthn authentication plugin to notify 
+    Callback function to be called by WebAuthn authentication plugin to notify
     the user.
-
-    Note: Currently the same callback can be used wih deprecated Fido
-    authentication plugin.
 
     Note: The `fido_callback` pointer is re-used as a flag to indicate if
     the callback was set by a user and its type (WebAuthn vs. Fido).

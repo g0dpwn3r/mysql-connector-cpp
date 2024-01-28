@@ -59,6 +59,7 @@ public:
 
   virtual const sql::SQLString & getName() = 0;
 
+  // TODO: Remove these functions when ABI breaking change is made elsewhere.
   virtual void setCallBack(sql::Fido_Callback &cb) = 0;
   virtual void setCallBack(sql::Fido_Callback &&cb) = 0;
 
