@@ -66,6 +66,11 @@ ENDIF(CMAKE_COMPILER_IS_GNUCC AND MYSQLCPPCONN_GCOV_ENABLE)
 
 ADD_EXECUTABLE(static_test static_test.cpp)
 
+add_version_info(static_test
+  "MySQL Connector/C++ unit test."
+  "Tests MySQL Connector/C++ functionality."
+)
+
 SET_TARGET_PROPERTIES(static_test PROPERTIES
   LINK_FLAGS "${MYSQLCPPCONN_LINK_FLAGS_ENV} ${MYSQL_LINK_FLAGS}"
   COMPILE_FLAGS "${MYSQLCPPCONN_COMPILE_FLAGS_ENV}"
@@ -79,6 +84,11 @@ TARGET_LINK_LIBRARIES(static_test ${MY_TARGET_LINK_LIBRARIES} ${MY_GCOV_LINK_LIB
 
 LINK_DIRECTORIES(${GLIB_DIR}/lib)
 ADD_EXECUTABLE(driver_test driver_test.cpp)
+
+add_version_info(driver_test
+  "MySQL Connector/C++ unit test."
+  "Tests MySQL Connecto/C++ functionality."
+)
 
 SET_TARGET_PROPERTIES(driver_test PROPERTIES
   LINK_FLAGS "${MYSQLCPPCONN_LINK_FLAGS_ENV} ${MYSQL_LINK_FLAGS}"
@@ -95,11 +105,18 @@ function(add_unit_test NAME)
 
   if (ARGN)
     list(GET ARGN 0 TGT_NAME)
+    set(description "MySQL Connector/C++ usage example.")
+    set(comments "Runs demo code.")
   else()
     set(TGT_NAME test_${NAME})
+    set(description "MySQL Connector/C++ unit test.")
+    set(comments "Tests MySQL Connector/C++ functionality.")
   endif()
 
   ADD_EXECUTABLE(${TGT_NAME} ${test_${NAME}_sources})
+
+  add_version_info(${TGT_NAME} "${description}" "${comments}")
+
   SET_TARGET_PROPERTIES(${TGT_NAME} PROPERTIES
     OUTPUT_NAME "${NAME}"
     LINK_FLAGS "${MYSQLCPPCONN_LINK_FLAGS_ENV} ${MYSQL_LINK_FLAGS}"

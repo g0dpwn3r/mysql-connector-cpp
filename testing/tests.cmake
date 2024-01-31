@@ -53,6 +53,11 @@ IF (WITH_TESTS)
   # Unit tests declared with ADD_NG_TEST() (see cdk/cmake/testing.cmake)
   ADD_TEST_TARGET()
 
+  add_version_info(run_unit_tests
+    "MySQL Connector/C++ unit tests."
+    "Tests MySQL Connector/C++ functionality."
+  )
+
   # Install these as part of `Tests` component.
 
   install(

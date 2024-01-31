@@ -256,6 +256,12 @@ set(INFO_PREFIX "jdbc-")
 
 merge_libraries(connector-jdbc jdbc)
 
+add_version_info(connector-jdbc
+  "MySQL Connector/C++ legacy (JDBC) library."
+  "Implements MySQL Connector/C++ legacy JDBC API."
+)
+
+
 
 # Note: When connector links statically to the client library, targets using
 # the connector must be able to find dependencies of the client library, such
