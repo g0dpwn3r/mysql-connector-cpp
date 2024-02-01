@@ -311,6 +311,14 @@ function(merge_libraries TARGET)
 
     add_custom_command(TARGET ${TARGET} PRE_BUILD
 
+      # Note: Remove the library produced by -deps target to ensure that
+      # the build step below invokes the linker.
+      #
+      # Note: `cmake -E rm -f ...` is not supported by cmake 3.15 which is cmake
+      # version we still need to support.
+
+      COMMAND ${CMAKE_COMMAND} -E remove -f $<TARGET_FILE:${TARGET}-deps>
+
       # TODO: This works only when the build tool is msbuild (as it uses
       # msbuild cmd line options), fails with ninja for example.
 
@@ -319,8 +327,8 @@ function(merge_libraries TARGET)
         --target ${TARGET}-deps
         --config $<CONFIG>
         --
-          /nologo /v:q /filelogger /flp:Verbosity=q /flp:ShowCommandLine
-          /flp:LogFile=\"${log_file}.STATIC\"
+          /nologo /v:q /filelogger
+          "/flp:Verbosity=m;ShowCommandLine;LogFile=\"${log_file}.STATIC\""
 
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       COMMENT "Extracting dependency info for target ${TARGET}"
