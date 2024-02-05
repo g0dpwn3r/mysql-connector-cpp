@@ -223,6 +223,12 @@ TEST_F(Sess, compression)
 }
 
 
+/*
+  Check that cipher with higher priority (mandatory) is selected over
+  a cipher with lower priority (approved) even when user specified them
+  in reversed order.
+*/
+
 TEST_F(Sess, tls_ciphers_prio)
 {
   SKIP_IF_NO_XPLUGIN;
@@ -265,6 +271,9 @@ TEST_F(Sess, tls_ver_ciphers)
   SKIP_IF_SERVER_VERSION_LESS(8, 0, 14)
 
   std::set<std::string> versions = {"TLSv1.1" ,"TLSv1.2"};
+
+  // TOOD: Instead, working ciphers should be selected from the current cipher list(s).
+
   std::map<std::string, std::string> suites_map = {
     { "DHE-RSA-AES128-GCM-SHA256", "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"},
     { "DES-CBC3-SHA", "TLS_RSA_WITH_3DES_EDE_CBC_SHA" }
@@ -485,6 +494,48 @@ TEST_F(Sess, tls_ver_ciphers)
 
   }
 
+}
+
+
+TEST_F(Sess, tls_unaccepted_ciphers)
+{
+#ifndef TLS_CIPHERS_UNACCEPTABLE
+  cout << "Skipping - list of unacceptable ciphers is not available." << endl;
+#else
+
+  SKIP_IF_NO_XPLUGIN;
+  SKIP_IF_SERVER_VERSION_LESS(8, 0, 14)
+
+  auto test_suite = [this](string suite)
+  {
+    // cout << "Testing unacceptable ciphersuite: " << suite << endl;
+    SessionSettings opt = get_opt();
+
+    opt.set(
+      SessionOption::SSL_MODE, SSLMode::REQUIRED,
+      SessionOption::TLS_CIPHERSUITES, suite
+    );
+
+    try {
+      mysqlx::Session sess(opt);
+      GTEST_FAIL()
+        << "Session created using unacceptable cipher suite: " << suite;
+    }
+    catch(Error &e)
+    {
+      std::string what = e.what();
+      // cout << "Got error: " << what << endl;
+      bool check_error =
+        std::string::npos != what.find("OpenSSL")
+        && std::string::npos != what.find("no ciphers available");
+      EXPECT_TRUE(check_error) << "Unexpected error: " << what;
+    }
+  };
+
+  #define TEST_CIPHER(A,...)  test_suite(#A);
+  TLS_CIPHERS_UNACCEPTABLE(TEST_CIPHER)
+
+#endif
 }
 
 

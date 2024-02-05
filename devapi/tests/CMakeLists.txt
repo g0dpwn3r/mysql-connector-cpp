@@ -31,6 +31,8 @@
 # are not good for building client code that uses the connector.
 #
 
+get_filename_component(CDKDIR "${CMAKE_CURRENT_LIST_DIR}/../../cdk" ABSOLUTE)
+
 set_property(
   DIRECTORY .
   PROPERTY COMPILE_DEFINITIONS ""
@@ -57,3 +59,16 @@ ADD_NG_TEST(devapi-t
   first-t.cc crud-t.cc types-t.cc batch-t.cc ddl-t.cc session-t.cc
   bugs-t.cc test.h
 )
+
+set(TLS_CIPHERS_H "${CDKDIR}/foundation/tls_ciphers.h")
+
+if(EXISTS ${TLS_CIPHERS_H})
+
+  message(STATUS "Using cipher list defined in: ${TLS_CIPHERS_H}")
+
+  include_directories("${CDKDIR}/foundation")
+  add_compile_definitions(TLS_CIPHERS_H)
+
+else()
+  message(SEND_ERROR "The cipher list could not be found: ${TLS_CIPHERS_H}")
+endif()
