@@ -149,16 +149,8 @@ endif()
 
 find_dependency(MySQL)
 
-add_library(otel_api INTERFACE)
-# Note: For now make it phony target on platforms other than Linux
-if(NOT (WIN32 OR APPLE OR CMAKE_SYSTEM_NAME MATCHES "SunOS"))
-  message(STATUS "Adding OTel support")
-  set(TELEMETRY ON)
-  target_include_directories(otel_api INTERFACE
-    "${PROJECT_SOURCE_DIR}/extra/otel/opentelemetry-cpp-1.8.3/api/include"
-  )
-  target_compile_definitions(otel_api INTERFACE TELEMETRY)
-endif()
+# otel_api interface target
+add_subdirectory(extra/otel)
 
 
 #-----------------
