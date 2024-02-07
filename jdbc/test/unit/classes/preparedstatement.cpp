@@ -1549,5 +1549,93 @@ void preparedstatement::executeQuery()
   }
 }
 
+
+void preparedstatement::queryAttributes() {
+  stmt.reset(con->createStatement());
+
+  if (stmt->setQueryAttrNull("dummy") == 0)
+    SKIP("Server doesn't support query attributes");
+
+  try {
+    stmt->execute("UNINSTALL COMPONENT 'file://component_query_attributes'");
+  } catch (...) {
+  }
+
+  stmt->execute("INSTALL COMPONENT 'file://component_query_attributes'");
+
+  // Scenario 1
+  pstmt.reset(con->prepareStatement("SELECT ?,"
+                         "mysql_query_attribute_string('attr1'), "
+                         "mysql_query_attribute_string('attr2'), "
+                         "mysql_query_attribute_string('attr3')"));
+
+  pstmt->setQueryAttrInt("attr1", 200);
+  pstmt->setQueryAttrString("attr2", "string value");
+  pstmt->setQueryAttrBoolean("attr3", true);
+  sql::SQLString str_test = "Param String";
+  pstmt->setString(1, str_test);
+
+  res.reset(pstmt->executeQuery());
+
+  ASSERT(res->next());
+  ASSERT_EQUALS(str_test, res->getString(1));
+  ASSERT_EQUALS(200, res->getInt(2));
+  ASSERT_EQUALS("string value", res->getString(3));
+  ASSERT_EQUALS(true, res->getBoolean(4));
+
+  // Scenario 2
+  pstmt->setQueryAttrInt("attr1", 200);
+  res.reset(pstmt->executeQuery());
+
+  ASSERT(res->next());
+  ASSERT_EQUALS(str_test, res->getString(1));
+  ASSERT_EQUALS(200, res->getInt(2));
+  ASSERT_EQUALS("string value", res->getString(3));
+  ASSERT_EQUALS(true, res->getBoolean(4));
+
+  // Scenario 3
+  pstmt->setQueryAttrInt("attr1", 100);
+  res.reset(pstmt->executeQuery());
+
+  ASSERT(res->next());
+  ASSERT_EQUALS(str_test, res->getString(1));
+  ASSERT_EQUALS(100, res->getInt(2));
+  ASSERT_EQUALS("string value", res->getString(3));
+  ASSERT_EQUALS(true, res->getBoolean(4));
+
+  // Scenario 4
+  pstmt->clearAttributes();
+  res.reset(pstmt->executeQuery());
+
+  ASSERT(res->next());
+  ASSERT_EQUALS(str_test, res->getString(1));
+  ASSERT(res->isNull(2));
+  ASSERT(res->isNull(3));
+  ASSERT(res->isNull(4));
+
+  // Scenario 5 - traceparent behavior
+  pstmt.reset(con->prepareStatement("SELECT ?,"
+                         "mysql_query_attribute_string('traceparent')"));
+  pstmt->setString(1, str_test);
+  res.reset(pstmt->executeQuery());
+
+  ASSERT(res->next());
+  ASSERT_EQUALS(str_test, res->getString(1));
+
+  sql::SQLString s = "user set string";
+
+  // At this point we do not know if traceparent was set by telemetry.
+  // If the user set traceparent attribute it should overwrite
+  // the one set by telemetry or just be set as any other attribute
+  // if telemetry is not present.
+  pstmt->setQueryAttrString("traceparent", s);
+  res.reset(pstmt->executeQuery());
+  ASSERT(res->next());
+  ASSERT_EQUALS(str_test, res->getString(1));
+  ASSERT_EQUALS(s, res->getString(2));
+
+  stmt->execute("UNINSTALL COMPONENT 'file://component_query_attributes'");
+}
+
 } /* namespace preparedstatement */
 } /* namespace testsuite */
