@@ -1,5 +1,5 @@
 # Copyright (c) 2010, 2023, Oracle and/or its affiliates.
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License, version 2.0,
 # as published by the Free Software Foundation.
@@ -26,7 +26,7 @@ cmake_minimum_required(VERSION 3.0)
 # Build MSI package from files installed in CMAKE_INSTALL_PREFIX location.
 #
 # Usage:
-#  cmake -D CMAKE_INSTALL_PREFIX=<install loc> 
+#  cmake -D CMAKE_INSTALL_PREFIX=<install loc>
 #        -D INSTALL_MANIFEST=<manifest file> ... <src>/packaging/WiX
 #  cmake --build . --target MSI
 #  cmake --build . --target ZIP
@@ -134,12 +134,16 @@ include(${BASE_DIR}/packaging/PackageSpecs.cmake)
 #
 
 SET(MANUFACTURER "Oracle Corporation")
-SET(PRODUCT_NAME "MySQL Connector C++")
-SET(PRODUCT_DESCRIPTION "MySQL Connector C++")
+SET(PRODUCT_NAME "MySQL Connector/C++")
+SET(PRODUCT_DESCRIPTION "MySQL Connector/C++")
 
 set(MAJOR_VERSION ${CONCPP_VERSION_MAJOR})
 set(MINOR_VERSION ${CONCPP_VERSION_MINOR})
 set(PATCH_VERSION ${CONCPP_VERSION_MICRO})
+
+set(WIX_INSTALL_BASE "MySQL Connector C++")
+set(WIX_INSTALL_DIR "${WIX_INSTALL_BASE} ${MAJOR_VERSION}.${MINOR_VERSION}")
+
 
 # **** IMPORTANT ****
 #
@@ -233,7 +237,7 @@ include(wix_setup.cmake)
 set(EXTRA_WIX_ARGS $ENV{EXTRA_WIX_ARGS})
 
 add_custom_target(MSI
-  COMMAND ${WIX_EXECUTABLE} build -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${PLATFORM} connector-cpp.wxs 
+  COMMAND ${WIX_EXECUTABLE} build -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${PLATFORM} connector-cpp.wxs
     -out  ${CMAKE_BINARY_DIR}/${CPACK_PACKAGE_FILE_NAME}.msi
     ${EXTRA_WIX_ARGS}
 )

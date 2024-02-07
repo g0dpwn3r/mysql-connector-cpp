@@ -115,7 +115,7 @@
     <WixVariable Id="WixUILicenseRtf" Value="@LICENSE_RTF@" />
 
     <!-- Installation root-->
-    
+
 
     <!-- WIX_FEATURES -->
     <Feature Id="XDEVAPI" Title="New X DevAPI connector" Description="New X DevAPI connector" ConfigurableDirectory="INSTALLDIR" Level="1">
@@ -146,7 +146,7 @@
        <ComponentGroupRef Id="componentgroup.Readme" />
     </Feature>
 
-    <!-- 
+    <!--
       Register installed connector in the CMake system package registry.
       See https://cmake.org/cmake/help/latest/manual/cmake-packages.7.html#system-package-registry
     -->
@@ -157,7 +157,7 @@
       Directory="INSTALLDIR"
     >
 
-      <RegistryValue 
+      <RegistryValue
         Root="HKLM"
         Key="Software\Kitware\CMake\Packages\mysql-concpp"
         Type="string"
@@ -181,7 +181,7 @@
 
     <Directory Id="@PROGRAM_FILES_FOLDER@">
       <Directory Id="directory.MySQL" Name="MySQL">
-        <Directory Id="INSTALLDIR" Name="@PRODUCT_NAME@ @MAJOR_VERSION@.@MINOR_VERSION@">
+        <Directory Id="INSTALLDIR" Name="@WIX_INSTALL_DIR@">
         </Directory>
       </Directory>
     </Directory>
