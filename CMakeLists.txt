@@ -81,6 +81,7 @@ include(platform)
 include(dependency)      # find_dependency()
 include(config_options)  # add_config_option()
 include(libutils)        # merge_libraries()
+include(version_info)    # set_version_info()
 
 #
 # Detect if we are configured as stand-alone project, or sub-project.
@@ -352,7 +353,6 @@ if(WITH_JDBC)
     PUBLIC "${PROJECT_BINARY_DIR}/include/jdbc"
     PUBLIC "${PROJECT_BINARY_DIR}/include/jdbc/cppconn"
     PUBLIC "${PROJECT_SOURCE_DIR}/include"
-
   )
 
 endif()
@@ -405,6 +405,11 @@ add_subdirectory(devapi)
 # Generate the main connector library.
 
 merge_libraries(connector xapi devapi)
+add_version_info(connector
+  "MySQL Connector/C++ XDevAPI library."
+  "Implements MySQL Connector/C++ XDevAPI."
+)
+
 target_include_directories(connector PUBLIC
   "${PROJECT_SOURCE_DIR}/include"
   # Note: This is needed when using connector directly from the build tree to
@@ -445,16 +450,16 @@ if(0)
 #  Add command to show rpath information
 #
 
-if(APPLE)
-  set(list_rpath_cmd otool -l $<TARGET_FILE:libconcpp> "|" grep RPATH -A2)
-elseif(NOT WIN32)
-  set(list_rpath_cmd objdump -x $<TARGET_FILE:libconcpp> "|" grep RPATH -A2)
-endif()
+  if(APPLE)
+    set(list_rpath_cmd otool -l $<TARGET_FILE:libconcpp> "|" grep RPATH -A2)
+  elseif(NOT WIN32)
+    set(list_rpath_cmd objdump -x $<TARGET_FILE:libconcpp> "|" grep RPATH -A2)
+  endif()
 
-add_custom_command(TARGET connector POST_BUILD
-  COMMAND ${list_rpath_cmd}
-  COMMENT "RPATH setting for: $<TARGET_FILE_NAME:mysqlcppconn>"
-)
+  add_custom_command(TARGET connector POST_BUILD
+    COMMAND ${list_rpath_cmd}
+    COMMENT "RPATH setting for: $<TARGET_FILE_NAME:mysqlcppconn>"
+  )
 endif()
 
 
@@ -499,7 +504,6 @@ endif()
 #
 # Note: Locations and names are configured in install_layout.cmake
 #
-
 
 set_property(TARGET connector PROPERTY OUTPUT_NAME ${LIB_NAME})
 message("Connector library name: ${LIB_NAME}")

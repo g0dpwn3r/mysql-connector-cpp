@@ -26,6 +26,10 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 
+# Note: To be used in copyright notes of generated files
+
+set(COPYRIGHT_YEAR "2024" CACHE INTERNAL "version info")
+
 #
 # Connector/C++ version
 #
