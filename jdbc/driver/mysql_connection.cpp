@@ -422,14 +422,14 @@ struct Prio
 
 
 /*
-  A callback setter object arranges for correct WebAuthn/Fido authentication
-  callbacks to be used by the correpsonding clientlib authentication plugin.
+  A callback setter object arranges for WebAuthn/Fido authentication
+  callbacks to be used by the WebAuthn clientlib authentication plugin.
 
   If a user has registered a callback with a driver that creates a connection
-  then a callback function is registered with authentication plugins which will
+  then a callback function is registered with authentication plugin which will
   call the callback stored in the driver.
 
-  The callback function registered with authentication plugins must be changed
+  The callback function registered with authentication plugin must be changed
   depending on which driver is used to create a connection. A callback setter
   object makes necessary changes when it detects that the current driver passed
   to its ctor is different from the one used last time.
@@ -469,15 +469,13 @@ struct MySQL_Driver::WebAuthn_Callback_Setter
     driver = &drv;  // Set current driver.
 
     /*
-      Note: A webauthn callback (callback_type 2 or 5) is registered with both
-      "fido" and "webauthn" plugins. A fido callback (callback_type 1 or 4)
-      is registered only with "fido" plugin. And if user did not register any
-      callback (callback_type 0 or 3) then both plugin callbacks are re-set
-      to null.
+      Note: A webauthn callback (callback_type 2 or 5) is registered with
+      "webauthn" plugin as well as fido callback (callback_type 1 or 4).
+      If user did not register any callback (callback_type 0 or 3) then
+      plugin callback is re-set to null.
     */
 
-    register_callback(prx, "fido", (callback_type % 3) > 1);
-    register_callback(prx, "webauthn", (callback_type % 3) > 0);
+    register_callback(prx, (callback_type % 3) > 0);
 
     /*
       Note: This will be reset to value 0-2 when user deregisters
@@ -509,12 +507,10 @@ struct MySQL_Driver::WebAuthn_Callback_Setter
   std::lock_guard<std::mutex> lock;
 
   static
-  void register_callback(Proxy *proxy, std::string which, bool set_or_reset)
+  void register_callback(Proxy *proxy, bool set_or_reset)
   {
-    std::string plugin = "authentication_" + which + "_client";
-    std::string opt = (which == "webauthn" ?
-      "plugin_authentication_webauthn_client" : which) +
-      "_messages_callback";
+    std::string plugin = "authentication_webauthn_client";
+    std::string opt = "plugin_authentication_webauthn_client";
 
     try
     {
@@ -530,13 +526,6 @@ struct MySQL_Driver::WebAuthn_Callback_Setter
       if(!set_or_reset)
         return;
 
-      /*
-        If failed, plugin is not present, we ignore this fact for deprected
-        fido plugin.
-      */
-
-      if ("fido" != which)
-        throw;
     }
     catch (sql::InvalidArgumentException &e)
     {

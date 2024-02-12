@@ -3964,25 +3964,25 @@ void connection::tls_deprecation()
 
 
 /*
-  Testing FIDO/WebAuthn connection and callback functionality.
+  Testing WebAuthn connection and callback functionality.
 
   These tests are designed for manual run. They require the following preparation steps:
 
-  1. Install FIDO auth plugin on the server:
+  1. Install Webauthn auth plugin on the server:
 
-    INSTALL PLUGIN authentication_fido SONAME 'authentication_fido.so'
+    INSTALL PLUGIN authentication_webauthn SONAME 'authentication_webauthn.so'
 
-  2. Create user with FIDO/Webauthn authentication:
+  2. Create user with Webauthn authentication:
 
-    CREATE USER 'ufido'@'localhost'
+    CREATE USER 'uwebauthn'@'localhost'
     IDENTIFIED WITH caching_sha2_password BY 'sha2_password'
     AND IDENTIFIED WITH authentication_webauthn
 
   3. Register FIDO:
 
-    mysql --port=13000 --protocol=tcp --user=ufido --password1 --fido-register-factor=2
+    mysql --port=13000 --protocol=tcp --user=uwebauthn --password1 --fido-register-factor=2
 
-  4. Set env variable MYSQL_FIDO to non-empty value
+  4. Set env variable MYSQL_WEBAUTHN to non-empty value
 */
 
 /* Variable value will be changed by callbacks */
@@ -4136,36 +4136,6 @@ void connection::test_fido_webauthn(sql::ConnectOptionsMap &opt, bool callback_i
 
 
 /*
-  Note: This test is expecting account `ufido` configured to use
-  `authentication_fido` plugin.
-*/
-
-void connection::fido_test()
-{
-  using std::cout;
-  using std::endl;
-
-  if(!getenv("MYSQL_FIDO"))
-    return;
-
-  sql::ConnectOptionsMap opt;
-  opt[OPT_USERNAME] = "ufido";
-  opt[OPT_PASSWORD] = "sha2_password";
-
-  test_fido_webauthn<sql::Fido_Callback, MyWindowFido>(opt);
-
-  cout << endl
-  << "Check that webauthn callback is not used for fido accounts" << endl;
-
-  test_fido_webauthn<sql::WebAuthn_Callback, MyWindowWebAuthn>(opt, true);
-
-  // Clear up the callback.
-  sql::Driver *driver = sql::mysql::get_driver_instance();
-  driver->setCallBack(sql::WebAuthn_Callback{nullptr});
-}
-
-
-/*
   Note: This test is expecting account `uwebauthn` configured to use
   `authentication_webauthn` plugin.
 */
@@ -4175,7 +4145,7 @@ void connection::webauthn_test()
   using std::cout;
   using std::endl;
 
-  if(!getenv("MYSQL_FIDO") && !getenv("MYSQL_WEBAUTHN"))
+  if(!getenv("MYSQL_WEBAUTHN"))
     return;
 
   sql::ConnectOptionsMap opt;

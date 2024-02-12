@@ -74,7 +74,7 @@ class MySQL_Driver;
     struct My_Callback : WebAuthn_Callback
     {
       void ActionRequested(SQLString) override;
-    } 
+    }
     cb;
 
     driver->setCallback(cb);
@@ -137,6 +137,9 @@ public:
 
 
 /*
+ * TODO: This class is not needed. Remove it when the decision to
+ *       break ABI is made.
+ *
  * Class that provides functionality allowing user code to set the
  * callback functions through inheriting, passing the callback as
  * constructor parameters or using lambdas.
