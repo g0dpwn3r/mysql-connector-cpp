@@ -122,7 +122,7 @@ function(message_info)
   if(NOT mysql-concpp_FIND_VERBOSE OR mysql-concpp_FIND_QUIETLY)
     return()
   endif()
-  message(STATUS ${ARGV})
+  message(STATUS "mysql-concpp: " ${ARGV})
 endfunction()
 
 
@@ -133,18 +133,29 @@ macro(main)
   #
   # FIXME: lib64/ or lib/ as appropriate for the platform
 
+
   if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/include/mysqlx/xdevapi.h")
 
+    # Case of monolithic install
+
     set(MYSQL_CONCPP_ROOT_DIR "${CMAKE_CURRENT_LIST_DIR}")
-    message_info("mysql-conccp module at: ${MYSQL_CONCPP_ROOT_DIR}")
     set(LIB_PATH "${MYSQL_CONCPP_ROOT_DIR}/@INSTALL_LIB_DIR@")
+    message_info("Module installed at: ${MYSQL_CONCPP_ROOT_DIR}")
     set(INCLUDE_PATH "${MYSQL_CONCPP_ROOT_DIR}/include")
 
   else()
 
-    # These are paths for RPM layout
-    set(LIB_PATH "/usr/@INSTALL_LIB_DIR@")
+    # System-wide install, DEB or RPM layout.
+
     set(INCLUDE_PATH "/usr/include/mysql-cppconn-8")
+    get_filename_component(LIB_PATH "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
+
+    file(GLOB found "${LIB_PATH}/*libmysqlcppconn*")
+
+    if(NOT found)
+      # Note: Use RPM layout as fallback
+      set(LIB_PATH "/usr/@INSTALL_LIB_DIR@")
+    endif()
 
   endif()
 
@@ -161,14 +172,14 @@ macro(main)
     message(FATAL_ERROR ${mysql-concpp_NOT_FOUND_MESSAGE})
   endif()
 
-  message_info("mysql-concpp includes: ${MYSQL_CONCPP_INCLUDE_DIR}")
+  message_info("Include path: ${MYSQL_CONCPP_INCLUDE_DIR}")
 
   # Note: On windows we look for the import library, not the DLL. This import
   # library normally is in a ./vsNN subfolder of the library path.
 
-  set(import_suffix)
+  unset(vs_suffix)
   if(WIN32)
-    set(import_suffix PATH_SUFFIXES vs14)
+    set(vs_suffix vs14)
   endif()
 
   # Find required dependencies. Currtently this looks for OpenSSL and defines
@@ -198,7 +209,7 @@ macro(main)
   # Note: The different find_xxx() functions set the specific part
   # of the message, such as ${fail_message_devapi}, in case of failure.
 
-  set(fail_message "Could NOT find MySQL Connector/C++.")
+  set(fail_message "Could NOT find MySQL Connector/C++ at ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}.")
 
   if(fail_message_devapi) # AND MYSQL_CONCPP_FIND_REQUIRED_devapi)
     list(APPEND fail_message ${fail_message_devapi})
@@ -315,44 +326,24 @@ function(find_connector which)
   endif()
 
 
-  # Find location of shared libraries or DLLs in case of Win (if not already
+  # Set location of shared libraries or DLLs in case of Win (if not already
   # done).
 
   if(NOT MYSQL_CONCPP_RUNTIME_LIBRARY_DIR)
 
-    # TODO: Use find_file() instead to get path to DLL on Win?
+    set(MYSQL_CONCPP_RUNTIME_LIBRARY_DIR "${LIB_PATH}")
 
-    file(GLOB found
-      "${LIB_PATH}/*${base_name}*"
-    )
+    # Note: set MYSQL_CONCPP_RUNTIME_LIBRARY_DIR as output variable only
+    # in case of monolithic install.
 
-    if(NOT found)
-
-      set(fail_message_devapi "Could not find connector libraries")
-
-      if(MYSQL_CONCPP_ROOT_DIR)
-        list(APPEND fail_message_devapi
-          "(at MYSQL_CONCPP_ROOT_DIR: ${LIB_PATH})."
-        )
-      else()
-        list(APPEND fail_message_devapi
-          "(at ${LIB_PATH})."
-        )
-      endif()
-
-      set_parent(fail_message_devapi)
-      return()
-
-    endif()
-
-    list(GET found 0 path)
-    get_filename_component(MYSQL_CONCPP_RUNTIME_LIBRARY_DIR "${path}" DIRECTORY)
+    if(MYSQL_CONCPP_ROOT_DIR)
 
     message_info(
       "Runtime library folder: ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}"
     )
-
     set_parent(MYSQL_CONCPP_RUNTIME_LIBRARY_DIR)
+
+    endif()
 
     set(
       MYSQL_CONCPP_PLUGIN_DIR "${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/plugin"
@@ -424,11 +415,10 @@ function(add_connector_target which tgt base_name)
     set(type "STATIC")
   endif()
 
-  set(lib_path)
+  unset(lib_path CACHE)
   find_library(lib_path
     NAMES ${base_name}
-    PATHS ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}
-    ${import_suffix}
+    PATHS ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/${vs_suffix}
     NO_DEFAULT_PATH
     NO_CACHE
   )
@@ -461,11 +451,10 @@ function(add_connector_target which tgt base_name)
 
   # Look for debug variant of the library.
 
-  set(lib_path_debug)
+  unset(lib_path_debug CACHE)
   find_library(lib_path_debug
     NAMES ${base_name}
-    PATHS ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}
-    ${import_suffix}/debug
+    PATHS ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/${vs_suffix}/debug
     NO_DEFAULT_PATH
     NO_CACHE
   )
@@ -506,18 +495,18 @@ function(find_deps)
 
     # Try to find the bundled OpenSSL
 
+    unset(ssl_lib CACHE)
     find_library(ssl_lib
       NAMES ssl libssl
-      PATHS ${LIB_PATH}
-      ${import_suffix}
+      PATHS ${LIB_PATH}/${vs_suffix}
       NO_DEFAULT_PATH
       NO_CACHE
     )
 
+    unset(ssl_crypto CACHE)
     find_library(ssl_crypto
       NAMES crypto libcrypto
-      PATHS ${LIB_PATH}
-      ${import_suffix}
+      PATHS ${LIB_PATH}/${vs_suffix}
       NO_DEFAULT_PATH
       NO_CACHE
     )
