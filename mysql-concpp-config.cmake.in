@@ -92,6 +92,19 @@
 # is defined prior to loading `mysql-concpp` package then this target is used
 # to resolve dependency on OpenSSL library.
 #
+# MySQL client library dependency
+# -------------------------------
+#
+# If legacy library is built with the MySQL client library linked dynamically
+# then the `concpp-jdbc-static` target depends on `libmysqlclient` which should
+# be available on the build host. If it is installed in non-standard location
+# then config variable WITH_MYSQL should be set to point at the MySQL install
+# location. The library search path will be augmented to find the client
+# library installed at that location.
+#
+# Note that connector libraries published by MySQL have the client library
+# statically linked in so that there is no external dependency on it.
+#
 # Debug libraries
 # ---------------
 #
@@ -126,6 +139,28 @@ function(message_info)
 endfunction()
 
 
+#
+# If WITH_MYSQL is not false then it is assumed that the `concpp-jdbc-static`
+# target depends on the MySQL client library. Additionally, if WITH_MYSQL is a
+# path pointing at MySQL install location, the library path will be extended so
+# that linker looks for the client library at that location.
+#
+# Note: The default value is set based on whether the JDBC connector was
+# statically linked with the client library or not.
+#
+
+if(NOT @MYSQLCLIENT_STATIC_LINKING@)
+  set(JDBC_MYSQL_DEP ON)
+else()
+  set(JDBC_MYSQL_DEP OFF)
+endif()
+
+set(WITH_MYSQL ${JDBC_MYSQL_DEP}
+  CACHE INTERNAL
+  "MySQL install location (to find the client library)"
+)
+
+
 macro(main)
 
   # Set paths to look for headers and libraries either relative to this file
@@ -158,7 +193,6 @@ macro(main)
     endif()
 
   endif()
-
 
   # Headers must always be found first.
 
@@ -353,52 +387,92 @@ function(find_connector which)
   endif()
 
   add_connector_target(${which} ${target_name} ${base_name})
-  add_connector_target(${which} ${target_name}-static ${base_name}-static)
+
+  # Note: if the mysql::openssl target is not defined then we are on Windows
+  # and no suitable OpenSSL was found. In that case static libraries will
+  # not work and we do not define these targets.
+
+  if(TARGET mysql::openssl)
+    add_connector_target(${which} ${target_name}-static ${base_name}-static)
+  endif()
 
   set_parent(MYSQL_CONCPP_DEBUG_FOUND)
 
-  if(TARGET mysql::${target_name}-static)
+  foreach(tgt ${target_name} ${target_name}-static)
 
-    set_target_properties(mysql::${target_name}-static PROPERTIES
-      IMPORTED_LINK_INTERFACE_LANGUAGES CXX
-      INTERFACE_COMPILE_DEFINITIONS STATIC_CONCPP
-    )
+    if(NOT TARGET mysql::${tgt})
+      continue()
+    endif()
 
-    # Handle additional dependencies required for static library.
+    unset(libs)
 
-    if(WIN32)
+    # JDBC dependency on the client library if specified via WITH_MYSQL
 
-      target_link_libraries(mysql::${target_name}-static INTERFACE Dnsapi)
+    if(target_name MATCHES "-jdbc" AND WITH_MYSQL)
 
-    else()
+      list(APPEND libs mysqlclient)
 
-      set(libs)
+      if(EXISTS "${WITH_MYSQL}/lib")
 
-      if(NOT APPLE)
-        list(APPEND libs pthread)
+        message_info("Client library path: ${WITH_MYSQL}/lib")
+
+        target_link_directories(mysql::${tgt}
+          INTERFACE "${WITH_MYSQL}/lib"
+        )
+
       endif()
-
-      # On Solaris we additionally need couple more libs.
-
-      if(CMAKE_SYSTEM_NAME MATCHES "SunOS")
-        list(APPEND libs socket nsl)
-      endif()
-
-      if(NOT CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-        list(APPEND libs resolv dl)
-      endif()
-
-      target_link_libraries(mysql::${target_name}-static INTERFACE ${libs})
 
     endif()
+
+    # OpenSSL dependency (target `mysql::openssl` is defined by find_deps())
+    #
+    # Note: Even though legacy connector does not use OpenSSL directly it migth
+    # have the client library statically linked in and get dependency
+    # on OpenSSL that way.
 
     if(TARGET mysql::openssl)
+      list(APPEND libs mysql::openssl)
+    endif()
 
-      target_link_libraries(mysql::${target_name}-static INTERFACE mysql::openssl)
+    if(tgt MATCHES "-static")
+
+      set_target_properties(mysql::${tgt} PROPERTIES
+        IMPORTED_LINK_INTERFACE_LANGUAGES CXX
+        INTERFACE_COMPILE_DEFINITIONS STATIC_CONCPP
+      )
+
+      # Handle additional dependencies required for static library.
+
+      if(WIN32)
+
+        list(APPEND libs Dnsapi)
+
+      else()
+
+        if(NOT APPLE)
+          list(APPEND libs pthread)
+        endif()
+
+        # On Solaris we additionally need couple more libs.
+
+        if(CMAKE_SYSTEM_NAME MATCHES "SunOS")
+          list(APPEND libs socket nsl)
+        endif()
+
+        if(NOT CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+          list(APPEND libs resolv dl)
+        endif()
+
+      endif()
 
     endif()
 
-  endif()
+    target_link_libraries(mysql::${tgt} INTERFACE ${libs})
+
+    string(JOIN " " libs ${libs})
+    message_info("Link libraries for target ${tgt}: ${libs}")
+
+  endforeach(tgt)
 
 endfunction(find_connector)
 
@@ -491,7 +565,7 @@ function(find_deps)
     return()
   endif()
 
-  set(ssl_lib)
+  unset(ssl_lib)
 
   if(MYSQL_CONCPP_ROOT_DIR)
 
@@ -524,16 +598,28 @@ function(find_deps)
 
   add_library(mysql_concpp_openssl INTERFACE)
 
-  if(NOT ssl_lib)
-    message_info("Using system OpenSSL libraries")
-    set(prefix)
-    if(WIN32)
-      set(prefix "lib")
-    endif()
-    set(ssl_lib "${prefix}ssl")
-    set(ssl_crypto "${prefix}crypto")
-  else()
+  if(ssl_lib)
+
     message_info("Using bundled OpenSSL")
+
+  elseif(WIN32)
+
+    message(STATUS "mysql-concpp:"
+      " For static linking the OpenSSL libraries are required but they are"
+      " not bundled with the connector -- static connector targets will not"
+      " be created. To use static connector libraries define mysql::openssl"
+      " target to point at an OpenSSL installation to be used."
+    )
+
+    return()
+
+  else()
+
+    message_info("Using system OpenSSL libraries")
+
+    set(ssl_lib "ssl")
+    set(ssl_crypto "crypto")
+
   endif()
 
   target_link_libraries(mysql_concpp_openssl INTERFACE

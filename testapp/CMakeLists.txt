@@ -32,10 +32,10 @@ cmake_minimum_required(VERSION 2.8.12)
 PROJECT(MySQL_CONCPP_TEST)
 
 #
-# This project builds test application sources in this folder using an external 
+# This project builds test application sources in this folder using an external
 # installation of the connector.
 #
-# Note: The project is *not* using connector library taken form the build tree 
+# Note: The project is *not* using connector library taken form the build tree
 # of this source tree.
 #
 # Settings using by this project:
@@ -64,7 +64,7 @@ PROJECT(MySQL_CONCPP_TEST)
 if(WITH_SSL)
 
   message(STATUS "Using custom OpenSSL libraries at: ${WITH_SSL}")
-  
+
   add_library(openssl INTERFACE)
   target_link_directories(openssl INTERFACE "${WITH_SSL}")
 
@@ -123,7 +123,7 @@ endif()
 
 
 if(NOT TARGET ${devapi_lib})
-  message(SEND_ERROR "The Con/C++ library target not defined")
+  message(SEND_ERROR "The Con/C++ library target not defined (${devapi_lib})")
 endif()
 
 add_executable(devapi_test devapi_test.cc)
@@ -132,12 +132,11 @@ target_link_libraries(devapi_test ${devapi_lib})
 add_executable(xapi_test xapi_test.c)
 target_link_libraries(xapi_test ${devapi_lib})
 
-# FIXME: make it work with static libs on Linux
 
-if(WITH_JDBC AND (NOT BUILD_STATIC OR WIN32))
+if(WITH_JDBC)
 
   if(NOT TARGET ${jdbc_lib})
-    message(SEND_ERROR "The legacy Con/C++ library target not defined")
+    message(SEND_ERROR "The legacy Con/C++ library target not defined (${jdbc_lib})")
   endif()
 
   add_executable(jdbc_test jdbc_test.cc)
@@ -191,9 +190,15 @@ if(MYSQL_CONCPP_RUNTIME_LIBRARY_DIR)
 
   message("Installing shared library dependencies.")
 
-  file(GLOB libs 
+  file(GLOB libs
     "${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
   )
+
+  if(WITH_MYSQL)
+    file(GLOB libs1 "${WITH_MYSQL}/lib*/*${CMAKE_SHARED_LIBRARY_SUFFIX}*")
+    list(APPEND libs ${libs1})
+  endif()
+
   file(INSTALL ${libs} DESTINATION run)
 
   # Also copy to debug folder in case debug variants are not available.
