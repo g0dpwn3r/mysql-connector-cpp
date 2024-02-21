@@ -472,7 +472,12 @@ set(PLUGINS)
 
 set(BUNDLED_LIBS)
 
-set(IGNORED_PLUGINS qa_auth_client telemetry_client)
+set(IGNORED_PLUGINS
+  qa_auth_client
+  # note: we have our own telemetry code, not using the client library plugin
+  telemetry_client
+  authentication_fido_client  # note: replaced by webauthn plugin
+)
 
 set(IGNORED_LIBS
   libmysql lber libprotobuf
