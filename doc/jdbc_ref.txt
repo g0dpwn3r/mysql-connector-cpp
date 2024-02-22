@@ -1,108 +1,98 @@
-Connector/C++ 8 legacy C++ API based on JDBC4 {#jdbc_ref}
+Connector/C++ 8 classic JDBC API Example {#jdbc_example}
 =======================================
 
-Connector/C++ 8 supports the legacy C++ API based on the JDBC4 specification.
-
-This allows an easy migration to Connector/C++ version 8.x for applications
-that use Connector/C++ version 1.1.
-
-More detailed information about the legacy C++ API can be found in the
-[MySQL Connector/C++ 1.1 Developer Guide](https://dev.mysql.com/doc/connector-cpp/1.1/en/)
-of MySQL online manual.
-
-
-### Sample code which uses Connector/C++ with legacy C++ API ###
-
-The following code demonstrates how to connect to MySQL Server using the
-legacy C++ API.
+Connector/C++ supports the classic C++ API based on the JDBC4 specification.
+This allows an easy migration to Connector/C++ 8 for applications that use
+earlier versions of Connector/C++ (e.g., version 1.1). See also
+[MySQL Connector/C++ 1.1 Developer Guide](https://dev.mysql.com/doc/connector-cpp/1.1/en/).
 
 @note
-  The connection is established over the legacy protocol and therefore
-  X Plugin is not needed and the server does not need to support X Protocol.
+JDBC API implementation uses the classic MySQL protocol and therefore it can
+work with older servers that do not support the X Protocol.
 
-After the connection is established the code executes a simple SQL statement
-and reads the result from the server. The source file can be found in
-testapp/jdbc_test.cc in the source distribution of Connector/C++ 8.
+
+### Sample code which uses Connector/C++ with classic C++ API ###
+
+The following code demonstrates how to connect to MySQL Server using
+the classic C++ API. After the connection is established the code executes
+a simple SQL statement and reads the result from the server. The source file
+can be found in testapp/jdbc_test.cc in the Connector/C++ source tree.
 See @ref usage for instructions on how to build the sample code.
 
-Each program which uses the legacy C++ API has to include this header:
+Each program which uses the classic C++ API has to include <mysql/jdbc.h>
+header:
 
 @dontinclude jdbc_test.cc
 @skip #include <mysql/jdbc.h>
 @until #include <mysql/jdbc.h>
 
-Define the credentials for connecting, process command line parameters and
-other housekeeping:
 
-@skip #define DEFAULT_URI "tcp://127.0.0.1"
-@until try {
+To establish a connection to MySQL Server, get an instance of
+`sql::Connection` from a `sql::Driver` object returned by
+`sql::mysql::get_driver_instance()`:
 
-To establish a connection to MySQL Server, retrieve an instance of
-`sql::Connection` from a `sql::mysql::MySQL_Driver` object.
-A `sql::mysql::MySQL_Driver` object is returned by
-`sql::mysql::get_mysql_driver_instance()`:
-
+@skip main
+@until {
+@skip try {
 @skip sql::Driver
-@until con(driver->connect(url, user, pass));
+@until driver->connect
 
-Make sure that you free con, the `sql::Connection` object, as soon as you do
-not need it any more. But do not explicitly free driver, the connector object.
-Connector/C++ takes care of freeing that.
+The `connect()` method returns a pointer to a dynamically allocated connection
+object which is stored in a `std::unique_ptr` to ensure that the object
+is deleted when no longer needed. The same pattern is used for other API
+methods that return pointers to objects -- it is responsibility of the caller
+to delete them. However, the driver instance should not be explicitly deleted,
+the connector takes care of freeing it.
 
-@note `get_mysql_driver_instance()` calls `get_driver_instance()`, which is
-not thread-safe. Either avoid invoking these methods from within multiple
-threads at once, or surround the calls with a mutex to prevent simultaneous
-execution in multiple threads.
+@note
+The `get_driver_instance()` function is not thread-safe. Either avoid invoking
+it from within multiple threads at once, or surround the calls with a mutex to
+prevent simultaneous execution in multiple threads.
 
- These methods can be used to check the connection state or reconnect:
+These methods can be used to check the connection state or reconnect:
 
  - `sql::Connection::isValid()` checks whether the connection is alive
 
  - `sql::Connection::reconnect()` reconnects if the connection has gone down
 
-The `sql::Connection` is used to set the schema and create a statement:
+We set the default schema of the connection and create a statement object that
+will be used to execute a query:
 
-@skip con->setSchema(database);
-@until std::unique_ptr< sql::Statement > stmt(con->createStatement());
+@skip con->setSchema
+@until con->createStatement
 
-To run simple queries, you can use the `sql::Statement::execute()`,
-`sql::Statement::executeQuery()`, and `sql::Statement::executeUpdate()` methods.
-Use the method `sql::Statement::execute()` if your query does not return
-a result set or if your query returns more than one result set:
-
-@skip std::unique_ptr< sql::ResultSet >
-@until res(stmt->executeQuery("SELECT 'Welcome to Connector/C++' AS _message"));
-
-@note The Statement and ResultSet objects are temporary, but they are
-dynamically allocated. Therefore we use std::unique_ptr<> to free memory
-when they are not needed anymore.
-
-The API for fetching result sets is identical for (simple) statements and
-prepared statements. If your query returns one result set, use
+To run simple queries that return a single result set use the
 `sql::Statement::executeQuery()` or `sql::PreparedStatement::executeQuery()`
-to run your query. Both methods return `sql::ResultSet` objects.
-By default, Connector/C++ buffers all result sets on the client to support
-cursors.
+method. Both methods return `sql::ResultSet` objects. By default the classic
+API implementation buffers all result sets on the client to support cursors.
+
+@note
+If your query does not return a result set or if it returns more than one
+result set use the `sql::Statement::execute()` method instead.
+
+@skip sql::ResultSet
+@until running 'SELECT
+
 
 The code below walks through the entire result set row by row using
 `sql::ResultSet::next()` method, which returns `true` if the row was
-successfully read. Otherwise it returns `false`, which means we reached the end
+successfully read. Otherwise it returns `false` which means we reached the end
 of the result set and there are no more rows to read.
-
-The actual data is obtained through the getXxxx() functions such as
-`getInt(), getString()`, etc. The columns can be indexed by numbers in the
-order they are given inside the result set starting from 1.
-Alternatively the column name can be used as a string index.
+The actual data is obtained through the `getXxxx()` methods `getInt()`,
+`getString()`, etc. The columns can be indexed by numbers in the order they
+are given inside the result set starting from 1. Alternatively the column name
+can be used as a string index.
 
 @skip while
 @until }
 
-Error handling is done through the standard try/catch blocks:
+Error handling is done using exceptions that derive from `sql::SQLException`
+class that is derived from `std::runtime_error`.
 
 @skip catch
 @until }
 
-Here is the complete C++ code of the test sample for the legacy C++ API:
+Here is the complete C++ code of the test sample for the classic C++ API:
 
 @include jdbc_test.cc
 

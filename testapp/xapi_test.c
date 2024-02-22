@@ -27,8 +27,9 @@
  * along with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include <stdio.h>
+
 #include <mysqlx/xapi.h>
+#include <stdio.h>
 #include <string.h>
 
 /* Error processing macros */
@@ -95,9 +96,6 @@ int main(int argc, const char* argv[])
   printf("\nConnected...");
 
   {
-  /*
-    TODO: Only working with server version 8
-  */
     res = mysqlx_sql(sess,
                      "show variables like 'version'",
                      MYSQLX_NULL_TERMINATED);
@@ -118,7 +116,7 @@ int main(int argc, const char* argv[])
 
     if (major_version < 8)
     {
-      printf("\nSession closed");
+      printf("\nWorks only with MySQL Server 8 or later\n");
       mysqlx_session_close(sess);
       return 0;
     }
