@@ -537,9 +537,32 @@ function(add_connector_target which tgt base_name)
 
   if(lib_path_debug)
 
-    message_info("Found debug variant of ${which} ${type} library at: ${lib_path_debug}")
+    message_info(
+      "Found debug variant of ${which} ${type} library at: ${lib_path_debug}"
+    )
 
     set(MYSQL_CONCPP_DEBUG_FOUND 1 PARENT_SCOPE)
+
+  endif()
+
+  # Note: On non-Windows platforms we set the debug location of the connector
+  # target only if the debug library variant was found so that if it was
+  # not found then the release variant will be used.
+  #
+  # However, on Windows it is not possible to mix debug and release code.
+  # Therefore we always set the debug location of the connector target
+  # on Windows so that if it is used in debug builds and the debug library
+  # variant is not present a linker error will be reported.
+
+  if(WIN32)
+
+    set(lib_path_debug
+      "${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/${vs_suffix}/debug/${base_name}.lib"
+    )
+
+  endif()
+
+  if(lib_path_debug)
 
     set_target_properties(mysql::${tgt} PROPERTIES
       IMPORTED_LOCATION_DEBUG "${lib_path_debug}"
