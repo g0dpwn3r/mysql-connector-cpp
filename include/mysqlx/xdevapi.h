@@ -1166,8 +1166,6 @@ public:
     Drop index on the collection.
 
     @param name name for an index to be dropped
-
-    @ingroup devapi_ddl
   */
 
   void dropIndex(const string &name)
