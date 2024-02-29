@@ -538,7 +538,7 @@ LibmysqlStaticProxy::stmt_bind_named_param(MYSQL_STMT * stmt, MYSQL_BIND * bind,
 my_bool
 LibmysqlStaticProxy::stmt_bind_param(MYSQL_STMT * stmt, MYSQL_BIND * bind)
 {
-#if MYSQL_VERSION_ID <= 80400
+#if MYSQL_VERSION_ID < 80400
   // TODO: we presume this will be removed in 8.4.0
   return ::mysql_stmt_bind_param(stmt, bind);
 #else
