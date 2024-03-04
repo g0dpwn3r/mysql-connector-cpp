@@ -1,4 +1,4 @@
-SET(OPENTELEMETRY_CPP_TAG "opentelemetry-cpp-1.10.0" CACHE INTERNAL "")
+SET(OPENTELEMETRY_CPP_TAG "opentelemetry-cpp-1.12.0" CACHE INTERNAL "")
 
 add_library(otel_api INTERFACE)
 

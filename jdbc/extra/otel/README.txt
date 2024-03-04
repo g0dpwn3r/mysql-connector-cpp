@@ -12,7 +12,7 @@ our copy:
   folder.
 
 3. Inside opentelemtry-cpp-X.Y.Z delete everything except api/ subfolder
-  and LICENSE file.
+  and LICENSE, README.md files.
 
 4. Inside CMakeLists.txt in this folder update OPENTELEMETRY_CPP_TAG
   variable:
