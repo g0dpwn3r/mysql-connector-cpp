@@ -93,7 +93,9 @@ function(add_version_info TGT DESCR)
   #  COMMAND ${CMAKE_COMMAND} -E rm -rf "${out}"
   #)
 
-  message(STATUS "generated version info for target ${TGT} (${TYPE}): ${out}")
+  if(MAINTAINER_MODE)
+    message(STATUS "generated version info for target ${TGT} (${TYPE}): ${out}")
+  endif()
 
 endfunction()
 
