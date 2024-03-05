@@ -42,6 +42,10 @@
 # the variable is set to the given value.
 #
 
+if(COMMAND ADD_CONFIG)
+  return()
+endif()
+
 set(CONFIG_VARS "" CACHE INTERNAL "configuration settings" FORCE)
 set(CONFIG_VARS_VAL "" CACHE INTERNAL "configuration settings" FORCE)
 

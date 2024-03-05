@@ -29,14 +29,22 @@
 ##############################################################################
 #
 # Targets:
-#   SSL::ssl     - main library
-#   SSL::crypto  - crypto library (automatically linked in when needed)
+#   OpenSSL::SSL      - main library (includes crypto library)
+#   OpenSSL::Crypto   - crypto library
+#
+# Output variables:
+#   OPENSSL_INCLUDE_DIR
+#   OPENSSL_LIB_DIR
+#   OPENSSL_VERSION
+#   OPENSSL_VERSION_MAJOR
+#   OPENSSL_LIBRARIES
 #
 
-if(TARGET SSL::ssl)
+if(TARGET OpenSSL::SSL)
   return()
 endif()
 
+include(config_header)  # add_config()
 include(CheckSymbolExists)
 
 add_config_option(WITH_SSL STRING DEFAULT system
@@ -55,26 +63,15 @@ function(main)
       set(OPENSSL_ROOT_DIR "${WITH_SSL}")
     endif()
 
+    if(NOT DEFINED OpenSSL_DIR)
+      set(OpenSSL_DIR "${WITH_SSL}")
+    endif()
+
   endif()
 
-
-  # TODO: Is it needed for anything?
-  #IF(STATIC_MSVCRT)
-  #  SET(OPENSSL_MSVC_STATIC_RT ON)
-  #ENDIF()
-
-
-  #
-  # Note: FindOpenSSL is broken on earlier versions of cmake. We use
-  # our simplified replacement in that case.
-  #
-  # Note: I got strange results on Win even with cmake 3.8
-  #
-
   find_openssl()
-  #find_package(OpenSSL)
 
-  if(NOT TARGET SSL::ssl)
+  if(NOT TARGET OpenSSL::SSL)
 
     message(SEND_ERROR
       "Cannot find appropriate system libraries for SSL. "
@@ -107,21 +104,6 @@ function(main)
 
   check_x509_functions()
 
-  if(WIN32 AND EXISTS "${OPENSSL_INCLUDE_DIR}/openssl/applink.c")
-
-    #message("-- Handling applink.c")
-
-    add_library(openssl-applink STATIC "${OPENSSL_INCLUDE_DIR}/openssl/applink.c")
-    target_link_libraries(SSL::ssl INTERFACE openssl-applink)
-
-    set_target_properties(openssl-applink PROPERTIES FOLDER "Misc")
-    # Remove warnings from openssl applink.c
-    if(CXX_FRONTEND_MSVC)
-      target_compile_options(openssl-applink PRIVATE /wd4152 /wd4996)
-    endif()
-  endif()
-
-
   if(BUNDLE_DEPENDENCIES)
     bundle_ssl_libs()
   endif()
@@ -130,7 +112,7 @@ endfunction(main)
 
 
 function(check_x509_functions)
-    SET(CMAKE_REQUIRED_LIBRARIES SSL::ssl)
+    SET(CMAKE_REQUIRED_LIBRARIES OpenSSL::SSL)
 
     CHECK_SYMBOL_EXISTS(X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS "openssl/x509v3.h"
                         HAVE_X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS)
@@ -152,16 +134,50 @@ endfunction(check_x509_functions)
 
 
 #
-# output:
-#   OPENSSL_INCLUDE_DIR
-#   OPENSSL_LIB_DIR
-#   OPENSSL_VERSION
-#   OPENSSL_VERSION_MAJOR
+# Find libraries, create import targets and set output variables.
 #
 
 function(find_openssl)
 
-  set(hints)
+  if(CMAKE_VERSION VERSION_GREATER "3.8" OR USE_CMAKE_FIND_OPENSSL)
+
+    # message(STATUS "Using cmake OpenSSL module")
+    find_package(OpenSSL)
+
+    set(OPENSSL_LIBRARY "${OPENSSL_SSL_LIBRARY}")
+
+  else()
+
+    #
+    # Note: FindOpenSSL is broken on earlier versions of cmake. We use
+    # our simplified replacement in that case.
+    #
+    # Note: I got strange results on Win even with cmake 3.8
+    #
+
+    find_openssl_fix()
+
+  endif()
+
+  get_filename_component(OPENSSL_LIB_DIR "${OPENSSL_LIBRARY}" PATH CACHE)
+
+  # Set output variables
+
+  set(OPENSSL_FOUND "${OPENSSL_FOUND}" PARENT_SCOPE)
+  set(OPENSSL_VERSION "${OPENSSL_VERSION}" PARENT_SCOPE)
+  set(OPENSSL_VERSION_MAJOR "${OPENSSL_VERSION_MAJOR}" PARENT_SCOPE)
+  set(OPENSSL_INCLUDE_DIR "${OPENSSL_INCLUDE_DIR}" PARENT_SCOPE)
+  set(OPENSSL_LIB_DIR "${OPENSSL_LIB_DIR}" PARENT_SCOPE)
+  set(OPENSSL_LIBRARIES "${OPENSSL_LIBRARIES}" PARENT_SCOPE)
+
+endfunction(find_openssl)
+
+
+macro(find_openssl_fix)
+
+  set(add_applink true)
+  unset(hints)
+
   if(OPENSSL_ROOT_DIR)
     set(hints HINTS ${OPENSSL_ROOT_DIR} NO_DEFAULT_PATH)
   endif()
@@ -176,9 +192,7 @@ function(find_openssl)
     return()
   endif()
 
-  set(OPENSSL_INCLUDE_DIR "${OPENSSL_INCLUDE_DIR}" PARENT_SCOPE)
   message("-- found OpenSSL headers at: ${OPENSSL_INCLUDE_DIR}")
-
 
   # Verify version number. Version information looks like:
   #   #define OPENSSL_VERSION_TEXT    "OpenSSL 1.1.1a  20 Nov 2018"
@@ -208,13 +222,9 @@ function(find_openssl)
 
   list(GET version_list 3 OPENSSL_VERSION_PATCH)
 
-
-
   set(OPENSSL_VERSION
     "${OPENSSL_VERSION_MAJOR}.${OPENSSL_VERSION_MINOR}.${OPENSSL_VERSION_FIX}${OPENSSL_VERSION_PATCH}"
-    PARENT_SCOPE
   )
-  set(OPENSSL_VERSION_MAJOR ${OPENSSL_VERSION_MAJOR} PARENT_SCOPE)
 
 
   find_library(OPENSSL_LIBRARY
@@ -239,29 +249,44 @@ function(find_openssl)
   # Note: apparently UNKNOWN library type does not work
   # https://stackoverflow.com/questions/39346679/cmake-imported-unknown-global-target
 
-  add_library(SSL::ssl SHARED IMPORTED GLOBAL)
-  set_target_properties(SSL::ssl PROPERTIES
+  add_library(OpenSSL::SSL SHARED IMPORTED GLOBAL)
+  set_target_properties(OpenSSL::SSL PROPERTIES
     IMPORTED_LOCATION "${OPENSSL_LIBRARY}"
     IMPORTED_IMPLIB "${OPENSSL_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}"
   )
 
-  add_library(SSL::crypto SHARED IMPORTED GLOBAL)
-  set_target_properties(SSL::crypto PROPERTIES
+  add_library(OpenSSL::Crypto SHARED IMPORTED GLOBAL)
+  set_target_properties(OpenSSL::Crypto PROPERTIES
     IMPORTED_LOCATION "${CRYPTO_LIBRARY}"
     IMPORTED_IMPLIB "${CRYPTO_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${OPENSSL_INCLUDE_DIR}"
   )
 
-  set_property(TARGET SSL::ssl PROPERTY
-    INTERFACE_LINK_LIBRARIES SSL::crypto
+  set_property(TARGET OpenSSL::SSL PROPERTY
+    INTERFACE_LINK_LIBRARIES OpenSSL::Crypto
   )
 
-  get_filename_component(OPENSSL_LIB_DIR "${OPENSSL_LIBRARY}" PATH CACHE)
+  #TODO: Is it needed also when OpenSSL is found via cmake module?
 
-  set(OPENSSL_FOUND TRUE PARENT_SCOPE)
+  if(WIN32 AND EXISTS "${OPENSSL_INCLUDE_DIR}/openssl/applink.c")
 
-endfunction(find_openssl)
+    #message("-- Handling applink.c")
+
+    add_library(openssl-applink STATIC "${OPENSSL_INCLUDE_DIR}/openssl/applink.c")
+    target_link_libraries(OpenSSL::SSL INTERFACE openssl-applink)
+
+    set_target_properties(openssl-applink PROPERTIES FOLDER "Misc")
+    # Remove warnings from openssl applink.c
+    if(CXX_FRONTEND_MSVC)
+      target_compile_options(openssl-applink PRIVATE /wd4152 /wd4996)
+    endif()
+
+  endif()
+
+  set(OPENSSL_FOUND true)
+
+endmacro(find_openssl_fix)
 
 
 #
@@ -276,16 +301,20 @@ function(bundle_ssl_libs)
   endif()
 
 
-  if(NOT WIN32 AND EXISTS ${OPENSSL_LIBRARY} AND EXISTS ${CRYPTO_LIBRARY})
+  if(NOT WIN32)
 
     # Note: On U**ix systems the files we link to are symlinks to
     # the actual shared libs, so we read these symlinks here and
     # bundle their targets as well.
 
-    foreach(lib ${OPENSSL_LIBRARY} ${CRYPTO_LIBRARY})
+    foreach(lib ${OPENSSL_LIBRARIES})
 
-      get_filename_component(path ${lib} REALPATH)
-      list(APPEND glob1 ${lib} ${path})
+      if(NOT EXISTS "${lib}")
+        continue()
+      endif()
+
+      get_filename_component(path "${lib}" REALPATH)
+      list(APPEND glob1 "${lib}" "${path}")
 
     endforeach()
 
@@ -351,39 +380,70 @@ function(bundle_ssl_libs)
   endif()
 
   if(APPLE)
-    # Replace libcrypto local path of libssl
-    EXECUTE_PROCESS(
-      COMMAND otool -L "${OPENSSL_LIBRARY}"
-      OUTPUT_VARIABLE OTOOL_OPENSSL_DEPS)
-    STRING(REPLACE "\n" ";" DEPS_LIST ${OTOOL_OPENSSL_DEPS})
 
-    foreach(LINE ${DEPS_LIST})
-      if(${LINE} MATCHES "ssl")
-        STRING(REGEX MATCH "(/.*libssl.*${CMAKE_SHARED_LIBRARY_SUFFIX})" XXXXX ${LINE})
+    # Edit the main OpenSSL library to not include full path to the crypto
+    # dependency. Instead use path relative to the location of the main library.
+    # Dependency information is changed from something
+    # like this:
+    #
+    # $ otool -L SSL/libssl.dylib
+    # SSL/libssl.dylib:
+    #  /opt/homebrew/Cellar/openssl@3/3.2.1/lib/libcrypto.3.dylib (compatibility version 3.0.0, current version 3.0.0)
+    #
+    # to something like this:
+    #
+    # $ otool -L SSL/libssl.dylib
+    # SSL/libssl.dylib:
+    #  @loader_path/libcrypto.3.dylib (compatibility version 3.0.0, current version 3.0.0)
+
+    # Read original dependencies using otool (only for the main library)
+
+    set(lib_ssl ${OPENSSL_LIBRARIES})
+    list(FILTER lib_ssl INCLUDE REGEX "libssl\.dylib$")
+
+    execute_process(
+      COMMAND otool -L ${lib_ssl}
+      OUTPUT_VARIABLE OTOOL_OPENSSL_DEPS
+    )
+
+    # Parse output of otool to extract full paths and library names
+    # with versions.
+
+    string(REPLACE "\n" ";" DEPS_LIST ${OTOOL_OPENSSL_DEPS})
+
+    foreach(line ${DEPS_LIST})
+    foreach(lib ssl crypto)
+
+      if(line MATCHES "(/.*lib${lib}.*${CMAKE_SHARED_LIBRARY_SUFFIX}).*compatibility version")
 
         if(CMAKE_MATCH_1)
-          get_filename_component(OPENSSL_LIBRARY_VERSION ${CMAKE_MATCH_1} NAME)
+          set(lib_${lib}_path "${CMAKE_MATCH_1}")
+          get_filename_component(lib_${lib}_name "${lib_${lib}_path}" NAME)
         endif()
-      elseif(${LINE} MATCHES "crypto")
-        STRING(REGEX MATCH "(/.*libcrypto.*${CMAKE_SHARED_LIBRARY_SUFFIX})" XXXXX ${LINE})
 
-        if(CMAKE_MATCH_1)
-          SET(LIBSSL_DEPS "${CMAKE_MATCH_1}")
-          get_filename_component(CRYPTO_LIBRARY_VERSION ${CMAKE_MATCH_1} NAME)
-        endif()
       endif()
 
-    endforeach()
+    endforeach(lib)
+    endforeach(line)
 
-    if(LIBSSL_DEPS)
-      # install_name_tool -change old new file
-      EXECUTE_PROCESS(
-        COMMAND chmod +w "${CRYPTO_LIBRARY_VERSION} ${OPENSSL_LIBRARY_VERSION}"
-        COMMAND install_name_tool -change "${LIBSSL_DEPS}" "@loader_path/${CRYPTO_LIBRARY_VERSION}" "${OPENSSL_LIBRARY_VERSION}"
-        WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/SSL"
-      )
+
+    if(NOT lib_ssl_path OR NOT lib_crypto_path)
+      message("Warning: Failed to edit OpenSSL library dependencies")
+      return()
     endif()
-  endif()
+
+    # Use install_name_tool to replace full path with @loader_path:
+    # $ install_name_tool -change old new file
+
+    execute_process(
+      COMMAND chmod +w ${lib_ssl_name} ${lib_crypto_name}
+      COMMAND install_name_tool
+        -change "${lib_crypto_path}" "@loader_path/${lib_crypto_name}"
+        "${lib_ssl_name}"
+      WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/SSL"
+    )
+
+  endif(APPLE)
 
 endfunction(bundle_ssl_libs)
 

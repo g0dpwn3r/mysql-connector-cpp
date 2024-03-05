@@ -297,7 +297,7 @@ function(main)
 
   if(MYSQL_LIB_STATIC)
     target_link_libraries(mysql-client-if INTERFACE MySQL::client-static)
-    target_link_libraries(mysql-client-if INTERFACE SSL::ssl SSL::crypto)
+    target_link_libraries(mysql-client-if INTERFACE OpenSSL::SSL)
   else()
     target_link_libraries(mysql-client-if INTERFACE MySQL::client-shared)
   endif()

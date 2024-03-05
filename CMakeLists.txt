@@ -303,6 +303,12 @@ if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 12.0)
 endif()
 
 
+# Note: Find OpenSSL early because it is needed by both CDK and JDBC (in case
+# of static linking with the client library)
+
+find_dependency(SSL)
+
+
 #
 # Testing framework
 #
