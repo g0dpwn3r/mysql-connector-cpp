@@ -1,88 +1,113 @@
-Connector/C++ 8 X DevAPI Reference {#devapi_ref}
-====================================
+Connector/C++ X DevAPI Example {#devapi_example}
+================================================
 
-Connector/C++ 8 implements the X DevAPI, as described in
-the [X DevAPI User Guide]
-(http://dev.mysql.com/doc/x-devapi-userguide/en/index.html).
-The X DevAPI allows one to work with MySQL Servers implementing a document store
-via the X Plugin. One can also execute plain SQL queries using this API.
+Connector/C++ implements the X DevAPI, as described in
+the [X DevAPI User Guide](http://dev.mysql.com/doc/x-devapi-userguide/en/index.html).
+The X DevAPI allows one to work with the document store of MySQL Server 8 or later, communicating over the X protocol. It is also possible to execute plain SQL queries using this API.
 
 To get started, check out some of the main X DevAPI classes:
 
-- To access data first create a @link mysqlx::abi2::r0::Session `Session`@endlink
-object. Keep in mind that @link mysqlx::abi2::r0::Session `Session`@endlink is
-not thread safe!
+- To access data first create a `mysqlx::Session` object. Keep in mind that
+  `mysqlx::Session` is not thread safe!
 
 - To manipulate data stored in a document collection or a table, create
-  a @link mysqlx::abi2::r0::Collection `Collection`@endlink or a @link mysqlx::abi2::r0::Table
-  `Table`@endlink object using methods `getCollection()` or `getTable()` of
-  a @link mysqlx::abi2::r0::Schema `Schema`@endlink object obtained from the session.
+  a `mysqlx::Collection` or a `mysqlx::Table` object using methods
+  [`getCollection()`](@ref mysqlx::abi2::r0::Schema::getCollection)
+  or [`getTable()`](@ref mysqlx::abi2::r0::Schema::getTable) of
+  a `mysqlx::Schema` object obtained from the session.
 
-- Queries and other statements are created using methods of the `Collection`
-  or `Table` class, such as `find()`. They are executed with method `execute()`.
+- Queries and other statements are created using methods of
+  the `mysqlx::Collection` or `mysqlx::Table` class, such as
+  [`find()`](@ref mysqlx::abi2::r0::Collection::find). They
+  are executed with
+  the [`execute()`](@ref mysqlx::abi2::r0::CollectionFind::execute) method.
 
-- Results of a query are examined using @link mysqlx::abi2::r0::DocResult
- `DocResult`@endlink or @link mysqlx::abi2::r0::RowResult `RowResult`@endlink instances
-  returned from `execute()` method. Method `fetchOne()` fetches the next item
-  (a document or a row) from the result until there are no more items left.
-  Method `fetchAll()` can fetch all items at once and store them in an STL
-  container.
+- Results of a query are examined using `mysqlx::DocResult`
+  or `mysqlx::RowResult` instances returned from `execute()` method. Method
+  [`fetchOne()`](@ref mysqlx::abi2::r0::DocResult::fetchOne) fetches the next
+  item (a document or a row) from the result until there are no more items
+  left. Method [`fetchAll()`](@ref mysqlx::abi2::r0::DocResult::fetchAll) can
+  fetch all items at once and store them in an STL container.
 
-- Documents and rows from query results are represented by @link mysqlx::abi2::r0::DbDoc
-  `DbDoc`@endlink and @link mysqlx::abi2::r0::Row `Row`@endlink instances, respectively.
+- Documents and rows from query results are represented by `mysqlx::DbDoc` and
+  `mysqlx::Row` instances, respectively.
 
 A more complete example of code that access MySQL Document Store using
-the X DevAPI is presented below. See also the [list of X DevAPI classes]
-(@ref devapi).
+the X DevAPI is presented below. See also
+the [list of X DevAPI classes](@ref devapi).
 
 
 ### Sample code which uses Connector/C++ with X DevAPI ###
 
-The following Connector/C++ application connects to a MySQL Server with
-X Plugin, creates a document collection, adds a few documents to it, queries
+The following Connector/C++ application connects to a MySQL Server over
+X protocol, creates a document collection, adds a few documents to it, queries
 the collection and displays the result. The sample code can be found in file
 `testapp/devapi_test.cc` in the source distribution of Connector/C++ 8.
 See @ref usage for instructions on how to build the sample code.
 
 @dontinclude devapi_test.cc
 
-Code which uses X DevAPI should include the `mysql_devapi.h` header. The API
+Code which uses X DevAPI should include the `<mysqlx/xdevapi.h>` header. The API
 is declared within the `mysqlx` namespace:
 
 @skip #include <mysqlx/xdevapi.h>
 @until using namespace
 
-To create an @link mysqlx::abi2::r0::Session `Session` @endlink object, specify DNS name
-of a MySQL Server, the port on which the plugin listens (default port is 33060)
-and user credentials:
+To create a `mysqlx::Session` object pass a connection string in URI format
+such as `"mysqlx://mike:s3cr3t!@localhost:13009"`. It specifies the host and
+port of the MySQL Server (port can be skipped in which case the default port
+will be used) and the MySQL account credentials.
 
 @skipline main
 @until Session
 
-Another way of specifying session parameters is by means of a `mysqlx`
-connection string like `"mysqlx://mike:s3cr3t!@localhost:13009"`. Once created,
-the session is ready to be used. If the session can not be established,
-the `Session` constructor throws an error.
+If the session could not be established the `mysqlx::Session` constructor
+throws an error derived from `mysqlx::Error` class (which also derives from
+`std::exception`). Otherwise the session is ready to be used once created.
 
-To manipulate documents in a collection, create a @link mysqlx::abi2::r0::Collection
-`Collection`@endlink object, first asking session for that collection's
-@link mysqlx::abi2::r0::Schema `Schema`@endlink:
+@note
+There are alternative ways of specifying session options, for example:
+~~~~~~
+  Session s1("mysqlx://mike:s3cr3t!@localhost:13009");
+  Session s2("localhost", 13009, "mike", "s3cr3t!");
+  Session s3(13009, "mike", "s3cr3t!");  // session on localhost
+  Session s4(
+    SessionOption::USER, "mike",
+    SessionOption::PWD, "s3cr3t!",
+    SessionOption::HOST, "localhost",
+    SessionOption::PORT, 13009
+  );
+~~~~~~
+In general the `mysqlx::Session` constructor uses its arguments to create
+a `mysqlx::SessionSettings` instance -- see documentation of that class for
+possible arguments to the constructor. Enumeration `mysqlx::SessionOption`
+defines all session options recognized by the connector.
 
-@skipline cout
+
+Next a `test` schema is created and a `c1` collection within that schema. They
+are represented by `mysqlx::Schema` and `mysqlx::Collection` objects,
+respectively:
+
+@skipline "Session accepted
 @until Collection
 
-The `true` parameter to @link mysqlx::abi2::r0::Schema::createCollection
-`createCollection()`@endlink method specifies that collection should be re-used
-if it already exists. Without this parameter an attempt to create an already
-existing collection produces an error. It is also possible to create
-a `Collection` object directly, without creating the `Schema` instance:
+The `true` parameter
+to the [`Session::createSchema()`](@ref mysqlx::abi2::r0::Session::createSchema)/[`Schema::createCollection()`](@ref mysqlx::abi2::r0::Schema::createCollection)
+method specifies that the schema/collection should be re-used if it already
+exists (rather than throwing an error which is the default behavior).
+
+@note
+It is also possible to create a `mysqlx::Collection` object directly, without
+explicitly creating a `mysqlx::Schema` instance:
 ~~~~~~~~
-Collection coll = sess.getSchema("test").getCollection("c1",true)
+Collection coll = sess.getSchema("test").createCollection("c1",true)
 ~~~~~~~~
 
 Before adding documents to the collection, all the existing documents are
-removed first using the @link mysqlx::abi2::r0::Collection::remove `Collection::remove()`@endlink
-method (expression "true" selects all documents in the collection):
+removed first using
+the [`Collection::remove()`](@ref mysqlx::abi2::r0::Collection::remove)
+method. The argument to this method is an expression which selects documents
+to be removed, in this case expression `"true"` selects all documents:
 
 @skipline remove("true")
 
@@ -90,13 +115,16 @@ Note that the `remove()` method returns an operation that must
 be explicitly executed to take effect. When executed, operation returns
 a result (ignored here; the results are used later).
 
-To insert documents use the @link mysqlx::abi2::r0::Collection::add
-`Collection::add()`@endlink method. Documents are described by JSON strings
-using the same syntax as MySQL Server. Note that double quotes are required
-around field names and they must be escaped inside C strings, unless the new
-C++11 `R"(...)"` string literal syntax is used as in the example below:
+To insert documents use
+the [`Collection::add()`](@ref mysqlx::abi2::r0::Collection::add) method.
+Documents are described by JSON strings. Note that double quotes are required
+around field names and they must be escaped inside C strings unless
+the `R"(...)"` raw string literal syntax is used as in the example below.
+Note also how internal code block is used to delete the result when it is no longer needed:
 
 @skipline {
+@until cout
+@until cout
 @until cout
 @until cout
 @until cout
@@ -104,40 +132,54 @@ C++11 `R"(...)"` string literal syntax is used as in the example below:
 @until }
 
 Result of the `add()` operation is stored in the `add` variable to be able
-to read identifiers of the documents that were added. These identifiers are
-generated by the connector, unless an added document contains an `"_id"` field
-which specifies its identifier. Note how internal code block is used to delete
-the result when it is no longer needed.
+to read identifiers of the inserted documents that were assigned by the server.
+They are returned by the `getGeneratedIds()` method of the `mysqlx::Result`
+class.
 
-@note It is possible to chain several `add()` calls as follows:
-  `coll.add(doc1).add(doc2)...add(docN).execute()`. It is also possible to pass
-  several documents to a single `add()` call:
-  `coll.add(doc1, ..., docN).execute()`. Another option is to pass
-  to `Collection::add()` an STL container with several documents.
+@note
+Server does not generate identifiers for documents which have an `"_id"` field
+-- in that case the value of the `"_id"` field is used as document's
+identifier. These explicit identifiers are not reported by `getGeneratedIds()`
+method.
 
-To query documents of a collection use the @link mysqlx::abi2::r0::Collection::find
-`Collection::find()`@endlink method:
+@note
+It is possible to chain several `add()` calls as follows:
+`coll.add(doc1).add(doc2)...add(docN).execute()`. It is also possible to pass
+several documents to a single `add()` call:
+`coll.add(doc1, ..., docN).execute()`. Another option is to pass
+to `Collection::add()` an STL container with several documents.
 
-@skipline coll.find(
+To query documents of a collection use
+the [`Collection::find()`](@ref mysqlx::abi2::r0::Collection::find) method
+which takes a Boolean expression that selects documents as its argument:
+
+@skipline "Fetching documents
+@until coll.find(
 
 The result of the `find()` operation is stored in a variable of type
-@link mysqlx::abi2::r0::DocResult `DocResult`@endlink which gives access to the returned
-documents that satisfy the selection criteria. These documents can be fetched
-one by one using the @link mysqlx::abi2::r0::DocResult::fetchOne
-`DocResult::fetchOne()`@endlink method, until it returns a null document that
-signals end of the sequence:
+`mysqlx::DocResult` which gives access to the returned documents that satisfy
+the selection criteria. These documents can be iterated using a range-for loop:
 
-@skipline fetchOne()
+@skipline int i
 @until cout
 
-Given a @link mysqlx::abi2::r0::DbDoc `DbDoc`@endlink object it is possible to iterate
+@note
+An alternative is to fetch documents one-by-one using
+the [`DocResult::fetchOne()`](@ref mysqlx::abi2::r0::DocResult::fetchOne)
+method, for example like this:
+~~~~~~~
+  DbDoc doc = docs.fetchOne();
+
+  for (int i = 0; doc; ++i, doc = docs.fetchOne()) { ... }
+~~~~~~~
+
+Given a `mysqlx::DbDoc` object it is possible to iterate
 over its fields as follows:
 
 @skipline for
 @until }
 
-Note how the @link mysqlx::abi2::r0::DbDoc::operator[] `operator[]`@endlink is used
-to access values of document fields:
+Note how `DbDoc::operator[]` is used to access values of document fields:
 
 @skipline name
 @until cout
@@ -146,20 +188,20 @@ The value of a field is automatically converted to a corresponding C++ type.
 If the C++ type does not match the type of the field value, conversion error
 is thrown.
 
-Fields which are sub-documents can be converted to the `DbDoc` type. The
-following code demonstrates how to process a `"date"` field which is
-a sub-document. Note how methods @link mysqlx::abi2::r0::DbDoc::hasField
-`DbDoc::hasField()`@endlink and @link mysqlx::abi2::r0::DbDoc::fieldType
-`DbDoc::fieldType()`@endlink are used to examine existence and type of a field
-within a document.
+Fields which are sub-documents can be converted to the `mysqlx::DbDoc` type. The
+following code demonstrates how to process the `"date"` field which is
+a sub-document. Methods
+[`DbDoc::hasField()`](@ref mysqlx::abi2::r0::DbDoc::hasField)
+and [`DbDoc::fieldType()`](@ref mysqlx::abi2::r0::DbDoc::fieldType)
+are used to examine existence and type of a field within a document.
 
 @skipline if
 @until }
 @until }
 
-In case of arrays, currently no conversion to C++ types is defined. However,
+In case of arrays currently no conversion to C++ types is defined. However,
 individual elements of an array value can be accessed using `operator[]` or
-they can be iterated using range for loop.
+they can be iterated using a range-for loop.
 
 @skipline if
 @until }
@@ -213,9 +255,10 @@ doc#1: {"_id": "A0ABC08DAABAD1110C120800273BD115", "age": 2, "name": "bar", "toy
 Done!
 ~~~~~~~
 
+<!-- TODO: Include here the output from run of testapp that is automatically generated by build system -->
 
 <!--
-  Copyright (c) 2015, 2020, Oracle and/or its affiliates.
+  Copyright (c) 2015, 2024, Oracle and/or its affiliates.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License, version 2.0, as

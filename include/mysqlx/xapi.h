@@ -31,7 +31,7 @@
 /**
   @defgroup xapi X DevAPI for C
 
-  Functions and types defined by X DevAPI for C. See @ref xapi_ref for introduction.
+  Functions and types defined by X DevAPI for C. See @ref xapi_example for introduction.
 
   @{
   @defgroup xapi_sess     Session operations

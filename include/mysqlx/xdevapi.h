@@ -38,7 +38,7 @@
 /**
   @defgroup devapi  X DevAPI Classes
 
-  X DevAPI Classes and types. See @ref devapi_ref for introduction.
+  X DevAPI Classes and types. See @ref devapi_example for introduction.
 
   @defgroup devapi_op     Database operations
   @ingroup devapi

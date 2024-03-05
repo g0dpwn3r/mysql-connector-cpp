@@ -77,12 +77,15 @@ int main(int argc, const char **argv)
          << endl << endl;
 
     std::unique_ptr< sql::Connection >
-      con(driver->connect(url, user, pass));
+      con{driver->connect(url, user, pass)};
+
     con->setSchema(database);
 
-    std::unique_ptr< sql::Statement > stmt(con->createStatement());
+    std::unique_ptr< sql::Statement > stmt{con->createStatement()};
+
     std::unique_ptr< sql::ResultSet >
-      res(stmt->executeQuery("SELECT 'Welcome to Connector/C++' AS _message"));
+      res{stmt->executeQuery("SELECT 'Welcome to Connector/C++' AS _message")};
+
     cout << "\t... running 'SELECT 'Welcome to Connector/C++' AS _message'"
          << endl;
 

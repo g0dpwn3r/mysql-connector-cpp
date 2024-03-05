@@ -1,27 +1,27 @@
 MySQL Connector/C++ Documentation  {#mainpage}
-=================================
+==============================================
 
 MySQL Connector/C++ is a library for applications written in C or C++ that
 communicate with MySQL database servers. Version 8 of Connector/C++
 implements three different APIs which can be used by applications:
 
-- The new [X DevAPI](@ref devapi_ref) for applications written in C++.
-- The new [X DevAPI for C](@ref xapi_ref) for applications written in plain C.
-- The [legacy JDBC4-based API](@ref jdbc_ref)
-  also implemented in version 1.1 of the connector.
+- The [X DevAPI](@ref devapi_example) for applications written in C++.
 
-The new APIs give access to MySQL implementing a 
-[document store](https://dev.mysql.com/doc/refman/en/document-store.html). 
-Internally these APIs use the new X Protocol to communicate with the MySQL 
-Server. Consequently, code written against these APIs can work only with MySQL 
-Server 8 with the X Plugin enabled in it. Apart from accessing the document 
-store, the new APIs allow executing traditional SQL queries as well.
+- The [X DevAPI for C](@ref xapi_example) for applications written
+  in plain C.
 
-Applications written against the JDBC4 based API of Connector/C++ 1.1 can be also
-compiled with Connector/C++ 8 which is backward compatible with the earlier
-version. Such code does not require the X Plugin and can communicate with older
-versions of the MySQL Server using the legacy protocol.
+- The [classic JDBC4-based API](@ref jdbc_example) that was also implemented
+  in earlier versions of the connector.
 
+X DevAPI and X DevAPI for C give access to MySQL implementing a
+[document store](https://dev.mysql.com/doc/refman/en/document-store.html).
+Internally these APIs use the X Protocol to communicate with the MySQL
+Server. Consequently, code written against these APIs can work only with MySQL
+Server 8 or later. Apart from accessing the document store, these APIs allow
+executing traditional SQL queries as well.
+The classic JDBC4-based API, on the other hand, uses the classic protocol and
+can communicate with older versions of the MySQL Server. It can work only with
+SQL queries and does not support CRUD operations over the document store.
 The API to be used is chosen by including appropriate set of headers, as
 explained in @ref usage.
 
