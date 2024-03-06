@@ -38,6 +38,7 @@
 #include <list>
 #include <map>
 #include <iostream>
+#include <vector>
 #include "sqlstring.h"
 #include "resultset_metadata.h"
 
@@ -136,6 +137,9 @@ public:
 
   virtual SQLString getString(uint32_t columnIndex)  const = 0;
   virtual SQLString getString(const sql::SQLString& columnLabel) const = 0;
+
+  virtual std::vector<float> getVector(uint32_t columnIndex) const = 0;
+  virtual std::vector<float> getVector(const sql::SQLString &columnLabel) const = 0;
 
   virtual enum_type getType() const = 0;
 

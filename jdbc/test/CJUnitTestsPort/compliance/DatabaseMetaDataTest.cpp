@@ -31,6 +31,7 @@
 
 
 #include "DatabaseMetaDataTest.h"
+#include <set>
 
 namespace testsuite
 {
@@ -7011,6 +7012,73 @@ void DatabaseMetaDataTest::testSupportsConvert37()
   }
 #else
   logMsg("supportsConvert(TINYINT, INTEGER) method is not supported");
+#endif
+}
+
+
+/*
+  * @testName:         testSupportsConvertVector
+  * @assertion:        The DatabaseMetaData provides information about the database.
+  *                    (See section 15.1 of JDBC 2.0 API Reference & Tutorial 2nd edition)
+  *
+  *                    A  driver must provide full support for DatabaseMetaData and
+  *                    ResultSetMetaData.  This implies that all of the methods in the
+  *                    DatabaseMetaData interface must be implemented and must behave as
+  *                    specified in the JDBC 1.0 and 2.0 specifications.  None of the
+  *                    methods in DatabaseMetaData and ResultSetMetaData may throw an
+  *                    exception because they are not implemented. (See section 6.2.2.3
+  *                    of Java2 Platform Enterprise Edition (J2EE) Specification v1.2)
+  *                    The supportsConvert(int fromType, int toType) method must return
+  *                    a boolean value; true if the database supports the scalar function
+  *                    CONVERT for conversions between the JDBC types fromType and toType
+  *                    and false otherwise. (See JDK 1.2.2 API documentation)
+  *
+  * @test_Strategy:    Get the DataBaseMetaData object from the Connection to the DataBase
+  *                    and call the supportsConvert(VECTOR, <TARGET_TYPE>),
+  *                    supportsConvert(<SOURCE_TYPE>, VECTOR) to check convertibility
+  *                    from and to VECTOR type. It is expected that data
+  *                    types representing binary data such as sql::DataType::BINARY,
+  *                    sql::DataType::VARBINARY or sql::DataType::LONGVARBINARY should
+  *                    be supported as <TARGET_TYPE> or <SOURCE_TYPE>. All other types
+  *                    should be returned as unsupported.
+  *
+  */
+
+/* throws std::exception * */
+
+void DatabaseMetaDataTest::testSupportsConvertVector()
+{
+#if HAVE_TYPE_VECTOR
+  // WL #16170 - Check 1: Check the VECTOR convertibility
+  logMsg("Calling supportsConvert(VECTOR) on DatabaseMetaData");
+  std::set<int> supported = {
+    sql::DataType::BINARY, sql::DataType::VARBINARY, sql::DataType::LONGVARBINARY
+  };
+
+#define DATA_TYPE_ELEMENT(X) sql::DataType::X,
+
+  std::vector<int> sql_types_list = {
+    DATA_TYPE_LIST(DATA_TYPE_ELEMENT)
+  };
+
+  for (auto t : sql_types_list)
+  {
+    bool should_support = supported.count(t);
+    bool is_supported = dbmd->supportsConvert(sql::DataType::VECTOR, t);
+
+    if (should_support != is_supported) {
+      FAIL("supportsConvert(sql::DataType::VECTOR," + std::to_string(t) + ") must "
+           + "be " + should_support ? "true" : "false");
+    }
+
+    is_supported = dbmd->supportsConvert(t, sql::DataType::VECTOR);
+    if (should_support != is_supported) {
+      FAIL("supportsConvert(" + std::to_string(t) + ",sql::DataType::VECTOR) must "
+           + "be " + should_support ? "true" : "false");
+    }
+  }
+#else
+  SKIP("VECTOR type is not supported");
 #endif
 }
 

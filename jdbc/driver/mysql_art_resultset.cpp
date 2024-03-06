@@ -734,6 +734,28 @@ MySQL_ArtResultSet::getString(const sql::SQLString& columnLabel) const
 /* }}} */
 
 
+/* {{{ MySQL_ArtResultSet::getVector() -U- */
+std::vector<float>
+MySQL_ArtResultSet::getVector(uint32_t columnIndex) const
+{
+  CPP_ENTER("MySQL_ArtResultSet::getVector");
+  checkValid();
+  throw sql::MethodNotImplementedException("MySQL_ArtResultSet::getVector()");
+}
+/* }}} */
+
+
+/* {{{ MySQL_ArtResultSet::getVector() -U- */
+std::vector<float>
+MySQL_ArtResultSet::getVector(const sql::SQLString& columnLabel) const
+{
+  CPP_ENTER("MySQL_ArtResultSet::getVector");
+  checkValid();
+  throw sql::MethodNotImplementedException("MySQL_ArtResultSet::getVector()");
+}
+/* }}} */
+
+
 /* {{{ MySQL_ArtResultSet::getType() -I- */
 sql::ResultSet::enum_type
 MySQL_ArtResultSet::getType() const

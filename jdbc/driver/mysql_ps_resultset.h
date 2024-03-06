@@ -158,6 +158,9 @@ public:
  SQLString getString(uint32_t columnIndex) const;
  SQLString getString(const sql::SQLString &columnLabel) const;
 
+ std::vector<float> getVector(uint32_t columnIndex) const;
+ std::vector<float> getVector(const sql::SQLString &columnLabel) const;
+
  sql::ResultSet::enum_type getType() const;
 
  void getWarnings();

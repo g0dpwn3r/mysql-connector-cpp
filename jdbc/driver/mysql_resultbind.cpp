@@ -93,6 +93,9 @@ static struct st_buffer_size_type
     case MYSQL_TYPE_BLOB:
     case MYSQL_TYPE_STRING:
     case MYSQL_TYPE_VAR_STRING:
+#ifdef HAVE_TYPE_VECTOR
+    case MYSQL_TYPE_VECTOR:
+#endif
 #if LIBMYSQL_VERSION_ID > 50700
     case MYSQL_TYPE_JSON:
 #endif //LIBMYSQL_VERSION_ID > 50700
@@ -281,7 +284,7 @@ MySQL_Bind::clear()
   // Free the length allocation in case it was used.
   if (length)
     delete length;
-    
+
   length = nullptr;
   buffer = nullptr;
   buffer_length = 0;
@@ -405,7 +408,7 @@ MySQL_AttributesBind::setQueryAttrBigInt(const SQLString &name, const sql::SQLSt
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -424,7 +427,7 @@ MySQL_AttributesBind::setQueryAttrBoolean(const sql::SQLString &name, bool value
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -443,7 +446,7 @@ MySQL_AttributesBind::setQueryAttrDateTime(const sql::SQLString &name, const sql
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -462,7 +465,7 @@ MySQL_AttributesBind::setQueryAttrDouble(const sql::SQLString &name, double valu
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -481,7 +484,7 @@ MySQL_AttributesBind::setQueryAttrInt(const sql::SQLString &name, int32_t value,
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -500,7 +503,7 @@ MySQL_AttributesBind::setQueryAttrUInt(const SQLString &name, uint32_t value,
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -519,7 +522,7 @@ MySQL_AttributesBind::setQueryAttrInt64(const SQLString &name, int64_t value,
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 
@@ -538,7 +541,7 @@ MySQL_AttributesBind::setQueryAttrUInt64(const sql::SQLString &name, uint64_t va
   unsigned int pos = get_bind_pos(name, pos_external);
 
   // See ::setQueryAttrString() for explanation.
-  
+
   if (pos_external != is_external)
     return pos+1;
 

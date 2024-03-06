@@ -1058,6 +1058,9 @@ MySQL_Prepared_ResultSet::getString(const uint32_t columnIndex) const
         case sql::DataType::ENUM:
         case sql::DataType::JSON:
         case sql::DataType::GEOMETRY:
+#ifdef HAVE_TYPE_VECTOR
+        case sql::DataType::VECTOR:
+#endif
             CPP_INFO("It's a string");
             return  sql::SQLString(static_cast<char *>(result_bind->rbind[columnIndex - 1].buffer), *result_bind->rbind[columnIndex - 1].length);
         default:
@@ -1082,6 +1085,55 @@ MySQL_Prepared_ResultSet::getString(const sql::SQLString& columnLabel) const
     return getString(findColumn(columnLabel));
 }
 /* }}} */
+
+
+/* {{{ MySQL_Prepared_ResultSet::getVector() -I- */
+std::vector<float> MySQL_Prepared_ResultSet::getVector(uint32_t columnIndex) const
+{
+    CPP_ENTER("MySQL_Prepared_ResultSet::getVector(int)");
+#if HAVE_TYPE_VECTOR
+    /* isBeforeFirst checks for validity */
+    if (isBeforeFirstOrAfterLast()) {
+        throw sql::InvalidArgumentException(
+            "MySQL_Prepared_ResultSet::getVector: can't fetch because not on result set");
+  }
+
+    if (columnIndex == 0 || columnIndex > num_fields) {
+        throw sql::InvalidArgumentException(
+            "MySQL_Prepared_ResultSet::getVector: invalid value of 'columnIndex'");
+    }
+
+    if (rs_meta->getColumnType(columnIndex) != sql::DataType::VECTOR) {
+        throw sql::InvalidArgumentException(
+            "MySQL_Prepared_ResultSet::getVector: invalid field type");
+    }
+
+    last_queried_column = columnIndex;
+    if (*result_bind->rbind[columnIndex - 1].is_null) {
+        return {};
+    }
+
+    // Get length in vector elements (float) instead of bytes
+    size_t len =
+        *result_bind->rbind[columnIndex - 1].length / sizeof(float);
+    float *data_buf =
+        static_cast<float *>(result_bind->rbind[columnIndex - 1].buffer);
+
+    return std::vector<float>(data_buf, data_buf + len);
+#else
+    throw sql::MethodNotImplementedException(
+        "MySQL_ResultSet::getVector()");
+#endif
+}
+
+
+/* {{{ MySQL_Prepared_ResultSet::getVector() -I- */
+std::vector<float> MySQL_Prepared_ResultSet::getVector(const sql::SQLString &columnLabel) const
+{
+    CPP_ENTER("MySQL_Prepared_ResultSet::getVector(string)");
+    return getVector(findColumn(columnLabel));
+}
+
 
 
 /* {{{ MySQL_Prepared_ResultSet::getType() -I- */

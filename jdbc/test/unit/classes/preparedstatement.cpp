@@ -1640,7 +1640,7 @@ void preparedstatement::queryAttributes() {
 void preparedstatement::vectorType() {
   stmt.reset(con->createStatement());
 
-  // ResultSetMetaData * meta_ps;  // Note: To be used for PS scenario
+  ResultSetMetaData * meta_ps;
   ResultSetMetaData * meta_st;
   ResultSet res_st;
 
@@ -1672,6 +1672,13 @@ void preparedstatement::vectorType() {
     ASSERT_EQUALS(1, pstmt->executeUpdate());
   };
 
+  auto insert_as_vector = [this](const std::vector<float> &data)
+  {
+    pstmt.reset(con->prepareStatement("INSERT INTO vector_check VALUES (?)"));
+    pstmt->setVector(1, data);
+    ASSERT_EQUALS(1, pstmt->executeUpdate());
+  };
+
   auto check_data = [](const float *f1, const float *f2, int N)
   {
     for (int i = 0; i < N; ++i) {
@@ -1679,13 +1686,18 @@ void preparedstatement::vectorType() {
     }
   };
 
-  auto check_result
-  = [&check_data](
-    testsuite::ResultSet &res, sql::ResultSetMetaData *meta,
-    const std::vector<float> &data
-  )
+  auto check_meta_and_data = [&]
+    (testsuite::ResultSet &res, sql::ResultSetMetaData *meta, int N)
   {
     ASSERT_EQUALS(1, meta->getColumnCount());
+
+    // Column size does not change even for data shorter than column
+    ASSERT_EQUALS(16 * 15 + 1, meta->getColumnDisplaySize(1));
+    ASSERT_EQUALS("col_vec", meta->getColumnName(1));
+    ASSERT_EQUALS(sql::DataType::VECTOR, meta->getColumnType(1));
+    ASSERT_EQUALS("VECTOR", meta->getColumnTypeName(1));
+    ASSERT_EQUALS((unsigned int)(N * sizeof(float)), meta->getPrecision(1));
+    ASSERT_EQUALS(0, meta->getScale(1));
 
     ASSERT(res->next());
 
@@ -1693,60 +1705,55 @@ void preparedstatement::vectorType() {
     auto bstr = res->getBlob(1);
     float res_buf[16];
     bstr->read(reinterpret_cast<char*>(res_buf), sizeof(res_buf));
-    check_data(data.data(), res_buf, data.size());
+    check_data(float_buf.data(), res_buf, N);
 
     // Read as BLOB with string column index
     bstr = res->getBlob("col_vec");
     memset(res_buf, 0, sizeof(res_buf));
     bstr->read(reinterpret_cast<char*>(res_buf), sizeof(res_buf));
-    check_data(data.data(), res_buf, data.size());
+    check_data(float_buf.data(), res_buf, N);
 
-    /*
-      Note: All meta data will be correct only when we have client library
-      that supports VECTOR data type and WL#16170 is implemented.
-    */
+    logMsg("WL#16170 - Check 4: Read VECTOR value as std::vector<float> data.");
 
-    // Column size does not change even for data shorter than column
-    // ASSERT_EQUALS(16 * 15 + 1, meta->getColumnDisplaySize(1));
-    ASSERT_EQUALS("col_vec", meta->getColumnName(1));
-    // ASSERT_EQUALS(sql::DataType::LONGVARBINARY, meta->getColumnType(1));
-    // ASSERT_EQUALS("VECTOR", meta->getColumnTypeName(1));
-    // ASSERT_EQUALS((unsigned int)(N * sizeof(float)), meta->getPrecision(1));
-    // ASSERT_EQUALS(0, meta->getScale(1));
+    // Read as VECTOR with numeric column index
+    auto vec_result = res->getVector(1);
+    ASSERT(float_buf.size() == vec_result.size());
+    check_data(float_buf.data(), vec_result.data(), N);
+
+    // Read as VECTOR with stromg column index
+    vec_result = res->getVector("col_vec");
+    ASSERT(float_buf.size() == vec_result.size());
+    check_data(float_buf.data(), vec_result.data(), N);
   };
 
-  auto check_selects
-  = [&res_st, &meta_st, &check_result, this](const std::vector<float> &data)
+  auto check_selects = [&](int N)
   {
-    /*
-      Note: When client library does not support VECTOR data type it fails
-      to fetch prepared statement results with VECTOR columns. This should work
-      when client library becomes aware of the VECTOR data type.
-    */
-
-    // pstmt.reset(con->prepareStatement("SELECT col_vec FROM vector_check"));
-    // res.reset(pstmt->executeQuery());
-    // meta_ps=res->getMetaData();
-    // check_result(res, meta_ps, N);
+    pstmt.reset(con->prepareStatement("SELECT col_vec FROM vector_check"));
+    res.reset(pstmt->executeQuery());
+    meta_ps=res->getMetaData();
+    check_meta_and_data(res, meta_ps, N);
 
     // Check for non-prepared statements reads
     res_st.reset(stmt->executeQuery("SELECT col_vec FROM vector_check"));
     meta_st = res_st->getMetaData();
-    check_result(res_st, meta_st, data);
+    check_meta_and_data(res_st, meta_st, N);
   };
 
   logMsg("WL#16170 - Check 2: Insert VECTOR value as <BLOB_TYPE> data");
-
   insert_as_blob(float_buf);
 
-  logMsg("WL#16170 - Check 3: Read VECTOR value as <BLOB_TYPE> data");
-
-  check_selects(float_buf);
+  logMsg("WL#16170 - Check 3: Read VECTOR value as <BLOB_TYPE> data.");
+  check_selects(float_buf.size());
 
   stmt->execute("TRUNCATE TABLE vector_check");
 
-  logMsg("WL#16170 - Check 8: Working with vector sizes R > N");
+  logMsg("WL#16170 - Check 5: Insert VECTOR value as std::vector<float> data");
+  insert_as_vector(float_buf);
 
+  logMsg("WL#16170 - Check 6: Read VECTOR data");
+  check_selects(float_buf.size());
+
+  logMsg("WL#16170 - Check 8: Working with vector sizes R > N");
   float_buf.emplace_back(876.123);
 
   try {
@@ -1755,13 +1762,22 @@ void preparedstatement::vectorType() {
   }
   catch(sql::SQLException &) {}
 
-  logMsg("WL#16170 - Working with vector sizes M < N");
+  try {
+    insert_as_vector(float_buf);
+    FAIL("Expected error not detected");
+  }
+  catch(sql::SQLException &) {}
 
+  logMsg("WL#16170 - Working with vector sizes M < N");
   float_buf.resize(8);
   stmt->execute("TRUNCATE TABLE vector_check");
 
   insert_as_blob(float_buf);
-  check_selects(float_buf);
+  check_selects(float_buf.size());
+
+  stmt->execute("TRUNCATE TABLE vector_check");
+  insert_as_vector(float_buf);
+  check_selects(float_buf.size());
 }
 
 } /* namespace preparedstatement */
