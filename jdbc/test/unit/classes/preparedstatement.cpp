@@ -1637,5 +1637,132 @@ void preparedstatement::queryAttributes() {
   stmt->execute("UNINSTALL COMPONENT 'file://component_query_attributes'");
 }
 
+void preparedstatement::vectorType() {
+  stmt.reset(con->createStatement());
+
+  // ResultSetMetaData * meta_ps;  // Note: To be used for PS scenario
+  ResultSetMetaData * meta_st;
+  ResultSet res_st;
+
+  try {
+    stmt->execute("DROP TABLE IF EXISTS vector_check");
+  } catch (...) {
+  }
+
+  try {
+    stmt->execute("CREATE TABLE vector_check(col_vec VECTOR(16))");
+  } catch (sql::SQLException &) {
+    SKIP("VECTOR type is not supported");
+  }
+
+  std::vector<float> float_buf = {
+    1.2345F, 2.3456E+10F, 3.4567F, -93.23F, 0.0F, -2, 5433.34F, 3.1415F,
+    2.7183F, 2.3456E-10F, 123.987F, 232.0F, 0.000001F, 3.33333333333E+0F,
+    10.0000009F, 9.9999998F
+  };
+
+  auto insert_as_blob = [this](const std::vector<float> &data)
+  {
+    pstmt.reset(con->prepareStatement("INSERT INTO vector_check VALUES (?)"));
+    std::istringstream iss(
+      std::string(reinterpret_cast<const char*>(data.data()), data.size() * sizeof(float)),
+      std::ios::binary
+    );
+    pstmt->setBlob(1, &iss);
+    ASSERT_EQUALS(1, pstmt->executeUpdate());
+  };
+
+  auto check_data = [](const float *f1, const float *f2, int N)
+  {
+    for (int i = 0; i < N; ++i) {
+      ASSERT(f1[i] == f2[i]);
+    }
+  };
+
+  auto check_result
+  = [&check_data](
+    testsuite::ResultSet &res, sql::ResultSetMetaData *meta,
+    const std::vector<float> &data
+  )
+  {
+    ASSERT_EQUALS(1, meta->getColumnCount());
+
+    ASSERT(res->next());
+
+    // Read as BLOB with numeric column index
+    auto bstr = res->getBlob(1);
+    float res_buf[16];
+    bstr->read(reinterpret_cast<char*>(res_buf), sizeof(res_buf));
+    check_data(data.data(), res_buf, data.size());
+
+    // Read as BLOB with string column index
+    bstr = res->getBlob("col_vec");
+    memset(res_buf, 0, sizeof(res_buf));
+    bstr->read(reinterpret_cast<char*>(res_buf), sizeof(res_buf));
+    check_data(data.data(), res_buf, data.size());
+
+    /*
+      Note: All meta data will be correct only when we have client library
+      that supports VECTOR data type and WL#16170 is implemented.
+    */
+
+    // Column size does not change even for data shorter than column
+    // ASSERT_EQUALS(16 * 15 + 1, meta->getColumnDisplaySize(1));
+    ASSERT_EQUALS("col_vec", meta->getColumnName(1));
+    // ASSERT_EQUALS(sql::DataType::LONGVARBINARY, meta->getColumnType(1));
+    // ASSERT_EQUALS("VECTOR", meta->getColumnTypeName(1));
+    // ASSERT_EQUALS((unsigned int)(N * sizeof(float)), meta->getPrecision(1));
+    // ASSERT_EQUALS(0, meta->getScale(1));
+  };
+
+  auto check_selects
+  = [&res_st, &meta_st, &check_result, this](const std::vector<float> &data)
+  {
+    /*
+      Note: When client library does not support VECTOR data type it fails
+      to fetch prepared statement results with VECTOR columns. This should work
+      when client library becomes aware of the VECTOR data type.
+    */
+
+    // pstmt.reset(con->prepareStatement("SELECT col_vec FROM vector_check"));
+    // res.reset(pstmt->executeQuery());
+    // meta_ps=res->getMetaData();
+    // check_result(res, meta_ps, N);
+
+    // Check for non-prepared statements reads
+    res_st.reset(stmt->executeQuery("SELECT col_vec FROM vector_check"));
+    meta_st = res_st->getMetaData();
+    check_result(res_st, meta_st, data);
+  };
+
+  logMsg("WL#16170 - Check 2: Insert VECTOR value as <BLOB_TYPE> data");
+
+  insert_as_blob(float_buf);
+
+  logMsg("WL#16170 - Check 3: Read VECTOR value as <BLOB_TYPE> data");
+
+  check_selects(float_buf);
+
+  stmt->execute("TRUNCATE TABLE vector_check");
+
+  logMsg("WL#16170 - Check 8: Working with vector sizes R > N");
+
+  float_buf.emplace_back(876.123);
+
+  try {
+    insert_as_blob(float_buf);
+    FAIL("Expected error not detected");
+  }
+  catch(sql::SQLException &) {}
+
+  logMsg("WL#16170 - Working with vector sizes M < N");
+
+  float_buf.resize(8);
+  stmt->execute("TRUNCATE TABLE vector_check");
+
+  insert_as_blob(float_buf);
+  check_selects(float_buf);
+}
+
 } /* namespace preparedstatement */
 } /* namespace testsuite */

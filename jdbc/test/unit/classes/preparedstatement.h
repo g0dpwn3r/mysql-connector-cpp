@@ -69,6 +69,7 @@ public:
     TEST_CASE(blob);
     TEST_CASE(executeQuery);
     TEST_CASE(queryAttributes);
+    TEST_CASE(vectorType);
   }
 
   /**
@@ -148,6 +149,10 @@ public:
    */
   void queryAttributes();
 
+  /**
+   * Check vector data type
+   */
+  void vectorType();
 
 };
 
