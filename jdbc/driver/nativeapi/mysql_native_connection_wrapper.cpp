@@ -77,7 +77,7 @@ get_mysql_option(sql::mysql::MySQL_Connection_Options opt)
   case sql::mysql::MYSQL_OPT_USE_RESULT: return ::MYSQL_OPT_USE_RESULT;
   case sql::mysql::MYSQL_REPORT_DATA_TRUNCATION: return ::MYSQL_REPORT_DATA_TRUNCATION;
   case sql::mysql::MYSQL_OPT_RECONNECT:
-#if MYCPPCONN_STATIC_MYSQL_VERSION_ID < 80300
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID < 80400
     return ::MYSQL_OPT_RECONNECT;
 #else
   {
@@ -343,7 +343,7 @@ MySQL_NativeConnectionWrapper::next_result()
 int
 MySQL_NativeConnectionWrapper::options(::sql::mysql::MySQL_Connection_Options option, const void * value)
 {
-#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80400
   if (option == MYSQL_OPT_RECONNECT) {
     reconnect = *(bool*)value;
     // For reconnect option we don't pass the call to api.
@@ -410,7 +410,7 @@ MySQL_NativeConnectionWrapper::options(::sql::mysql::MySQL_Connection_Options op
 int
 MySQL_NativeConnectionWrapper::get_option(::sql::mysql::MySQL_Connection_Options option, const void * value)
 {
-#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80400
   if (option == MYSQL_OPT_RECONNECT) {
     *(bool*)value = reconnect;
     // For reconnect option we don't pass the call to api.
@@ -548,7 +548,7 @@ MySQL_NativeConnectionWrapper::ping()
 {
   int res = api->ping(mysql);
 
-#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80300
+#if MYCPPCONN_STATIC_MYSQL_VERSION_ID >= 80400
   if (res && reconnect) {
     // Try reconnecting if could not ping and reconnect
     // option is set.
