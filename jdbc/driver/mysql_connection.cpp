@@ -1570,6 +1570,7 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
 
         std::advance(el, pos);
         proxy->use_protocol(el->Protocol());
+        host = *el; // Note: for error reporting
 
         try {
           connect(el->Host(), userName,
