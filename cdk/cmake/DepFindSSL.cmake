@@ -139,6 +139,8 @@ endfunction(check_x509_functions)
 
 function(find_openssl)
 
+  # Note: FindOpenSSL seems to be broken on earlier versions of cmake.
+
   if(CMAKE_VERSION VERSION_GREATER "3.8" OR USE_CMAKE_FIND_OPENSSL)
 
     # message(STATUS "Using cmake OpenSSL module")
@@ -148,18 +150,42 @@ function(find_openssl)
 
   else()
 
-    #
-    # Note: FindOpenSSL is broken on earlier versions of cmake. We use
-    # our simplified replacement in that case.
-    #
-    # Note: I got strange results on Win even with cmake 3.8
-    #
+    # Use our simplified replacement for broken FindOpenSSL
 
     find_openssl_fix()
 
   endif()
 
-  get_filename_component(OPENSSL_LIB_DIR "${OPENSSL_LIBRARY}" PATH CACHE)
+  # Set OPENSSL_LIB_DIR from the library path if it was not yet defined.
+
+  if(NOT OPENSSL_LIB_DIR)
+
+    # OPENSSL_LIBRARY can be a list containing optimized and debug variants:
+    #
+    #   optimized;/path/to/optimized/lib;debug;/path/to/debug/lib
+    #
+    # In that case we extract path from the optimized library.
+
+    list(FIND OPENSSL_LIBRARY "optimized" pos)
+
+    if(pos LESS 0)
+
+      # If "optimized" entry was not found we assume that OPENSSL_LIBRARY is a single path
+
+      set(lib_path "${OPENSSL_LIBRARY}")
+
+    else()
+
+      # Otherwise read the path after the "optimized" entry
+
+      math(EXPR pos "${pos}+1")
+      list(GET OPENSSL_LIBRARY ${pos} lib_path)
+
+    endif()
+
+    get_filename_component(OPENSSL_LIB_DIR "${lib_path}" PATH CACHE)
+
+  endif()
 
   # Set output variables
 

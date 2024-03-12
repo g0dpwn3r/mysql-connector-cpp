@@ -487,11 +487,23 @@ if(WIN32 AND OPENSSL_LIB_DIR)
     "${OPENSSL_LIB_DIR}/../bin/*${CMAKE_SHARED_LIBRARY_SUFFIX}*"
   )
 
-  add_custom_command(TARGET connector POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy
-      ${glob1} ${glob2} $<TARGET_FILE_DIR:connector>
-    COMMENT "# Copy OpenSSL dependency of connector library."
-  )
+  if(NOT glob1 AND NOT glob2)
+
+    message(
+      "Warning: Not copying OpenSSL DLLs in a POST_BUILD event"
+      " of connector target -- they were not found at: ${path}"
+      " (OPENSSL_LIB_DIR: ${OPENSSL_LIB_DIR})"
+    )
+
+  else()
+
+    add_custom_command(TARGET connector POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy
+        ${glob1} ${glob2} $<TARGET_FILE_DIR:connector>
+      COMMENT "# Copy OpenSSL dependency of connector library."
+    )
+
+  endif()
 
 endif()
 
