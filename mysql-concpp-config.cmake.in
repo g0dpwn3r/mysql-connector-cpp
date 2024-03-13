@@ -433,6 +433,8 @@ function(add_connector_target which tgt base_name)
 
   add_library(mysql::${tgt} ${type} IMPORTED GLOBAL)
 
+  target_compile_features(mysql::${tgt} INTERFACE cxx_std_11)
+
   set_target_properties(mysql::${tgt} PROPERTIES
     INTERFACE_INCLUDE_DIRECTORIES "${MYSQL_CONCPP_INCLUDE_DIR}"
   )
