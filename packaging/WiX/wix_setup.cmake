@@ -44,23 +44,3 @@ ELSE ()
     MESSAGE(FATAL_ERROR "Cannot find Wix in ${WIX_DIR}. Please set environment variable WIX_DIR which points to the wix installation directory")
   ENDIF ($ENV{WIX_DIR})
 ENDIF ()
-
-
-# Check WIX extensions, our MSI build requires UI and Util from WixToolset.
-
-message(STATUS "==Installed WiX extensions")
-execute_process(
-  COMMAND ${WIX_EXECUTABLE} extension list
-  OUTPUT_VARIABLE wix_extension
-)
-message(STATUS "==========================")
-
-if(
-  NOT wix_extensions MATCHES "WixToolset.UI.wixext"
-  OR NOT wix_extensions MATCHES "WixToolset.Util.wixext"
-)
-  message(SEND_ERROR
-    "Required WiX extensions not detected (WixToolset.UI/Util)"
-  )
-endif()
-
