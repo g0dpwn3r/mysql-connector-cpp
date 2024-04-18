@@ -267,7 +267,6 @@ TEST_F(Sess, tls_ciphers_prio)
 TEST_F(Sess, tls_ver_ciphers)
 {
   SKIP_IF_NO_XPLUGIN;
-  //USE_NATIVE_PWD;
   SKIP_IF_SERVER_VERSION_LESS(8, 0, 14)
 
   std::set<std::string> versions = {"TLSv1.1" ,"TLSv1.2"};
@@ -971,7 +970,7 @@ TEST_F(Sess, auth_method)
 {
   SKIP_IF_NO_XPLUGIN;
 
-  USE_NATIVE_PWD;
+  test::Test_user u{*this};
 
   auto check_user = [](mysqlx::Session &sess)
   {
@@ -993,7 +992,7 @@ TEST_F(Sess, auth_method)
     SessionSettings opts = common_opts;
     opts.set(
       SessionOption::SSL_MODE, SSLMode::DISABLED,
-      SessionOption::AUTH, AuthMethod::MYSQL41
+      SessionOption::AUTH, AuthMethod::SHA256_MEMORY
     );
     mysqlx::Session sess(opts);
     check_user(sess);
@@ -1014,7 +1013,7 @@ TEST_F(Sess, auth_method)
     SessionSettings opts = common_opts;
     opts.set(
       SessionOption::PWD, "notworkingpassword",
-      SessionOption::AUTH, AuthMethod::MYSQL41
+      SessionOption::AUTH, AuthMethod::SHA256_MEMORY
     );
     EXPECT_THROW(mysqlx::Session sess(opts), Error);
   }
@@ -1033,7 +1032,7 @@ TEST_F(Sess, auth_method)
     SessionSettings opts = common_opts;
     opts.set(
       SessionOption::SSL_MODE, SSLMode::REQUIRED,
-      SessionOption::AUTH, AuthMethod::MYSQL41
+      SessionOption::AUTH, AuthMethod::SHA256_MEMORY
     );
     mysqlx::Session sess(opts);
     check_user(sess);
@@ -1045,7 +1044,7 @@ TEST_F(Sess, auth_method)
 
   {
     std::stringstream str;
-    str << uri.str() << "/?ssl-mode=disabled&auth=mysql41";
+    str << uri.str() << "/?ssl-mode=disabled&auth=sha256_memory";
     mysqlx::Session sess(str.str());
     check_user(sess);
   }
@@ -1065,7 +1064,7 @@ TEST_F(Sess, auth_method)
 
   {
     std::stringstream str;
-    str << uri.str() << "/?ssl-mode=required&auth=mysql41";
+    str << uri.str() << "/?ssl-mode=required&auth=sha256_memory";
     mysqlx::Session sess(str.str());
     check_user(sess);
   }
@@ -1084,7 +1083,7 @@ TEST_F(Sess, auth_external)
     SessionOption::USER, get_user(),
     SessionOption::PWD, get_password() ? get_password() : nullptr,
     SessionOption::SSL_MODE, SSLMode::DISABLED,
-    SessionOption::AUTH, AuthMethod::PLAIN
+    SessionOption::AUTH, AuthMethod::EXTERNAL
   ), Error);
 
   std::stringstream uri;
@@ -1114,13 +1113,13 @@ TEST_F(Sess, ssl_session)
 
   SKIP_IF_NO_XPLUGIN;
 
-  USE_NATIVE_PWD;
+  test::Test_user u{*this};
 
   SessionSettings common_opts(
     SessionOption::HOST, get_host(),
     SessionOption::PORT, get_port(),
-    SessionOption::USER, get_user(),
-    SessionOption::PWD, get_password() ? get_password() : nullptr
+    SessionOption::USER, u.name(),
+    SessionOption::PWD, nullptr
   );
 
   {
@@ -1328,8 +1327,8 @@ TEST_F(Sess, ssl_session)
 TEST_F(Sess, ipv6)
 {
   SKIP_IF_NO_XPLUGIN;
-  USE_NATIVE_PWD;
 
+  test::Test_user u{*this};
   std::string host = get_host();
 
   if (host != "localhost" && host != "127.0.0.1")
@@ -1338,27 +1337,15 @@ TEST_F(Sess, ipv6)
     return;
   }
 
-  {
-    mysqlx::Session sess(SessionOption::HOST, "::1",
-                          SessionOption::PORT, get_port(),
-                          SessionOption::USER, get_user(),
-                          SessionOption::PWD, get_password() ? get_password() : nullptr,
-                          SessionOption::SSL_MODE, SSLMode::DISABLED
-                          );
-  }
-
-  //Using URI
+  // Using URI
+  // Note: no-SSL session must be created after SSL one
 
   std::stringstream uri;
 
-  uri << "mysqlx://" << get_user();
-
-  if (get_password() && *get_password())
-    uri << ":"<< get_password();
-
+  uri << "mysqlx://" << u.name();
   uri << "@" << "[::1]:" << get_port();
 
-  //URI without ssl_mode
+  LOG() << "Create session with uri: " << uri.str();
   {
     mysqlx::Session sess(uri.str());
 
@@ -1372,8 +1359,9 @@ TEST_F(Sess, ipv6)
     EXPECT_FALSE(cipher.empty());
   }
 
-  //Disable SSL_MODE
   uri << "/?Ssl-Mode=DisabLED";
+
+  LOG() << "Create session with uri: " << uri.str();
   {
     mysqlx::Session sess(uri.str());
 
@@ -1385,6 +1373,16 @@ TEST_F(Sess, ipv6)
     string cipher = row[1];
 
     EXPECT_TRUE(cipher.empty());
+  }
+
+  LOG() << "Create session using options";
+  {
+    mysqlx::Session sess(SessionOption::HOST, "::1",
+                          SessionOption::PORT, get_port(),
+                          SessionOption::USER, u.name(),
+                          SessionOption::PWD, nullptr,
+                          SessionOption::SSL_MODE, SSLMode::DISABLED
+                          );
   }
 }
 

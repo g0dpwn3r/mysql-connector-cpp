@@ -83,6 +83,8 @@ protected:
   {
     // Note: XPLUGIN_PORT must be defined.
 
+    testing::Message() << "foo";
+
     const char *xplugin_port = getenv("XPLUGIN_PORT");
     if (!xplugin_port)
     {
@@ -272,38 +274,121 @@ public:
     return false;
   }
 
-  friend class Use_native_pwd;
+  friend class Test_user;
 };
 
 
-class Use_native_pwd
+class Test_user
 {
   Xplugin& m_xplugin;
   std::string m_user;
   std::string m_password;
 
 public:
-  Use_native_pwd(Xplugin &xplugin)
-    : m_xplugin(xplugin)
+
+  Test_user(Xplugin &xplugin)
+    : Test_user(xplugin, "test_user")
+  {}
+
+  Test_user(Xplugin &xplugin, std::string name)
+    : Test_user(xplugin, std::move(name), {})
+  {}
+
+  Test_user(Xplugin &xplugin, std::string name, std::string pwd)
+    : Test_user(
+        xplugin, std::move(name), std::move(pwd), "caching_sha2_password"
+      )
+  {}
+
+  Test_user(
+    Xplugin &xplugin,
+    std::string name, std::string pwd,
+    std::string auth
+  )
+    : m_xplugin(xplugin), m_user(name), m_password(pwd)
   {
-    m_xplugin.sql_exec("DROP USER If EXISTS unsecure_root ");
-    m_xplugin.sql_exec("CREATE USER unsecure_root IDENTIFIED WITH 'mysql_native_password';");
-    m_xplugin.sql_exec("grant all on *.* to unsecure_root;");
-    m_user = m_xplugin.m_user;
-    m_password = m_xplugin.m_password;
-    m_xplugin.m_user = "unsecure_root";
-    m_xplugin.m_password.clear();
+    m_xplugin.sql_exec("DROP USER IF EXISTS `" + m_user + "`");
+    m_xplugin.sql_exec("CREATE USER `" + m_user + "` IDENTIFIED WITH '" + auth + "'" + (m_password.empty() ? "" : " BY '" + m_password + "'"));
+    m_xplugin.sql_exec("grant all on *.* to `" + m_user + "`");
   }
 
-  ~Use_native_pwd()
+  ~Test_user()
   {
-    m_xplugin.sql_exec("DROP USER unsecure_root");
-    m_xplugin.m_user = m_user;
-    m_xplugin.m_password = m_password;
+    m_xplugin.sql_exec("DROP USER IF EXISTS `" + m_user + "`");
+  }
+
+  std::string name()
+  {
+    return m_user;
+  }
+
+  std::string pwd()
+  {
+    return m_password;
   }
 };
 
-}} // mysql::test
+}} // mysqlx::test
+
+
+/*
+  Usage:
+
+    LOG() << "The value of x is: " << x;
+
+  This prints items to `std::cout` adding end of line at the end.
+
+  Note: The trick used is that expression
+
+    lo += lo << x1 << x2 << ...;
+
+  is parsed as
+
+    lo += (lo << x1 << x2 << ...);
+
+  Therefore first operator<<() are invoked printing items to cout and
+  then operator+=() which ends the line.
+*/
+
+#define LOG() \
+  ::mysqlx::test::Line_output{} += ::mysqlx::test::Line_output{std::cout}
+
+namespace mysqlx {
+namespace test {
+
+  struct Line_output
+  {
+    Line_output() = default;
+    Line_output(std::ostream& out)
+      : out{&out}
+    {}
+
+    template <typename T>
+    Line_output& operator <<(T&& x)
+    {
+      if (out)
+        (*out) << std::forward<T>(x);
+      return *this;
+    }
+
+    void operator +=(Line_output& out)
+    {
+      out.endl();
+    }
+
+
+    void endl()
+    {
+      if (out)
+        (*out) << std::endl;
+    }
+
+  private:
+
+    std::ostream *out = nullptr;
+  };
+
+}}  // mysqlx::test
 
 
 #define SKIP_IF_NO_XPLUGIN  \
@@ -336,9 +421,6 @@ public:
     catch (const char *e) { FAIL() << "Bad exception: " << e; } \
     catch (...) { FAIL() << "Bad exception"; } \
   } while(false)
-
-#define USE_NATIVE_PWD  \
-  mysqlx::test::Use_native_pwd __dummy_user__(*this)
 
 
 #endif

@@ -747,8 +747,6 @@ TEST_F(xapi, conn_string_test)
 {
   SKIP_IF_NO_XPLUGIN
 
-  USE_NATIVE_PWD;
-
   unsigned short port = 0;
   mysqlx_error_t *error = NULL;
 
@@ -758,7 +756,6 @@ TEST_F(xapi, conn_string_test)
   std::string conn_str_basic = get_uri();
 
 DO_CONNECT:
-
 
   {
     std::string conn_str = conn_str_basic;
@@ -1187,7 +1184,7 @@ TEST_F(xapi, auth_method)
 {
   SKIP_IF_NO_XPLUGIN
 
-  USE_NATIVE_PWD;
+  mysqlx::test::Test_user u{*this};
 
   mysqlx_error_t *error;
   mysqlx_session_t *local_sess = NULL;
@@ -1198,8 +1195,7 @@ TEST_F(xapi, auth_method)
 
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
                        OPT_HOST(get_host()), OPT_PORT(get_port()),
-                       OPT_USER(get_user()), OPT_PWD(get_password()),
-                       PARAM_END));
+                       OPT_USER(u.name().c_str()), PARAM_END));
 
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
                        OPT_SSL_MODE(SSL_MODE_DISABLED),
@@ -1239,12 +1235,12 @@ TEST_F(xapi, auth_method)
 
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
                        OPT_SSL_MODE(SSL_MODE_DISABLED),
-                       OPT_AUTH(MYSQLX_AUTH_MYSQL41),
+                       OPT_AUTH(MYSQLX_AUTH_SHA256_MEMORY),
                        PARAM_END));
 
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_get(opt, MYSQLX_OPT_AUTH,
                                                  &auth_method));
-  EXPECT_EQ(MYSQLX_AUTH_MYSQL41, auth_method);
+  EXPECT_EQ(MYSQLX_AUTH_SHA256_MEMORY, auth_method);
   local_sess = mysqlx_get_session_from_options(opt, NULL);
   if (!local_sess)
     FAIL() << "Failed to establish session";
@@ -1254,12 +1250,12 @@ TEST_F(xapi, auth_method)
 
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
                        OPT_SSL_MODE(SSL_MODE_REQUIRED),
-                       OPT_AUTH(MYSQLX_AUTH_MYSQL41),
+                       OPT_AUTH(MYSQLX_AUTH_SHA256_MEMORY),
                        PARAM_END));
 
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_get(opt, MYSQLX_OPT_AUTH,
                                                  &auth_method));
-  EXPECT_EQ(MYSQLX_AUTH_MYSQL41, auth_method);
+  EXPECT_EQ(MYSQLX_AUTH_SHA256_MEMORY, auth_method);
   local_sess = mysqlx_get_session_from_options(opt, NULL);
   if (!local_sess)
     FAIL() << "Failed to establish session";
@@ -1270,9 +1266,7 @@ TEST_F(xapi, auth_method)
   mysqlx_free(opt);
 
   std::stringstream conn;
-  conn << get_user();
-  if (get_password())
-    conn << ":" << get_password();
+  conn << u.name();
   conn << "@" << get_host() << ":" << get_port();
 
   std::string connstr = conn.str().data();
@@ -1290,7 +1284,7 @@ TEST_F(xapi, auth_method)
   }
 
   connstr = conn.str().data();
-  local_sess = mysqlx_get_session_from_url(connstr.append("?ssl-mode=disabled&auth=mysql41").data(),
+  local_sess = mysqlx_get_session_from_url(connstr.append("?ssl-mode=disabled&auth=sha256_memory").data(),
                                            NULL);
   if (!local_sess)
     FAIL() << "Session could not be established";
@@ -1308,7 +1302,7 @@ TEST_F(xapi, auth_method)
   local_sess = NULL;
 
   connstr = conn.str().data();
-  local_sess = mysqlx_get_session_from_url(connstr.append("?ssl-mode=required&auth=mysql41").data(),
+  local_sess = mysqlx_get_session_from_url(connstr.append("?ssl-mode=required&auth=sha256_memory").data(),
                                            NULL);
   if (!local_sess)
     FAIL() << "Session could not be established";
@@ -1386,123 +1380,157 @@ TEST_F(xapi, conn_options_test)
 {
   SKIP_IF_NO_XPLUGIN
 
-  USE_NATIVE_PWD;
+  mysqlx::test::Test_user u{*this};
 
   unsigned int port2 = 0;
-  unsigned int ssl_enable = 0;
   mysqlx_error_t *error;
 
-  char buf[1024];
-  char buf_check[2048];
+  char buf[2048];
 
   mysqlx_session_t *local_sess = NULL;
   mysqlx_session_options_t *opt = mysqlx_session_options_new();
 
 
+  LOG() << "Set base options";
+
   ASSERT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
                       OPT_HOST(get_host()), OPT_PORT(get_port()),
-                      OPT_USER(get_user()), OPT_PWD(""),
-                      PARAM_END));
+                      OPT_USER(u.name().c_str()), OPT_PWD("foo"), PARAM_END));
+
+  LOG() << "Overwrite password with the correct one";
 
   ASSERT_EQ(RESULT_OK,
-    mysqlx_session_option_set(opt, OPT_PWD(get_password()),PARAM_END)
+    mysqlx_session_option_set(opt, OPT_PWD(""),PARAM_END)
   );
+
+  LOG() << "Setting non-existing option";
 
   EXPECT_EQ(RESULT_ERROR, mysqlx_session_option_set(opt, (mysqlx_opt_type_t)127, port2, PARAM_END));
   cout << "Expected error: " << mysqlx_error_message(mysqlx_error(opt)) << std::endl;
 
+  LOG() << "Check option values";
+
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_get(opt, MYSQLX_OPT_HOST, buf));
   EXPECT_STREQ(get_host(), buf);
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_get(opt, MYSQLX_OPT_USER, buf));
-  EXPECT_STREQ(get_user(), buf);
+  EXPECT_STREQ(u.name().c_str(), buf);
   EXPECT_EQ(RESULT_OK, mysqlx_session_option_get(opt, MYSQLX_OPT_PORT, &port2));
   EXPECT_EQ(true, get_port() == port2);
 
-  EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
-    OPT_SSL_MODE(SSL_MODE_DISABLED), PARAM_END
-  ));
 
-
-DO_CONNECT:
-
-  if (local_sess)
-    mysqlx_session_close(local_sess);
-
-  local_sess = mysqlx_get_session_from_options(opt, &error);
-
-  if (!local_sess)
+  auto check_ssl = [&](bool ssl_enable, const char* ssl_ca = nullptr)
   {
-    mysqlx_free(opt);
-    std::stringstream str;
-    str << "Could not connect to xplugin. " << get_port() << std::endl <<
-      mysqlx_error_message(error) << " ERROR CODE: " <<
-      mysqlx_error_num(error);
+    mysqlx_ssl_mode_enum ssl_mode;
 
-    mysqlx_free(error);
-    FAIL() << str.str();
-  }
-  cout << "Connected to xplugin (" << (ssl_enable ? "SSL" : "no SSL") <<")..." << endl;
+    if (!ssl_enable)
+    {
+      ssl_mode = SSL_MODE_DISABLED;
+      LOG() << "Testing SSL mode: DISABLED";
+    }
+    else if (!ssl_ca)
+    {
+      ssl_mode = SSL_MODE_REQUIRED;
+      LOG() << "Testing SSL mode: REQUIRED";
+    }
+    else
+    {
+      ssl_mode = SSL_MODE_VERIFY_CA;
+      LOG() << "Testing SSL mode: VERIFY_CA";
+      LOG() << "Using CA path: " << ssl_ca;
+    }
 
-  std::string ssl = get_ssl_cipher(local_sess);
 
-  if (ssl_enable)
-  {
-    EXPECT_FALSE(ssl.empty());
-    cout << "SSL Cipher: " << ssl << endl;
-  }
-  else
-    EXPECT_TRUE(ssl.empty());
-
-  if (!ssl_enable)
-  {
-    ssl_enable = true;
-
-    authenticate();
-
-    if (!get_ca())
-      FAIL() << "Server CA path unknown";
-
-    std::string  ca = get_ca();
-    cout << "CA file: " << ca << endl;
-
-    EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt,
-      OPT_SSL_MODE(SSL_MODE_VERIFY_CA),
-      OPT_SSL_CA(ca.c_str()),
-      PARAM_END
+    EXPECT_EQ(RESULT_OK,
+      mysqlx_session_option_set(opt, OPT_SSL_MODE(ssl_mode), PARAM_END
     ));
 
-    EXPECT_EQ(RESULT_OK, mysqlx_session_option_get(opt, MYSQLX_OPT_SSL_CA, buf_check));
-    EXPECT_STREQ(ca.c_str(), buf_check);
+    if (ssl_ca)
+    {
+      EXPECT_EQ(RESULT_OK,
+        mysqlx_session_option_set(opt, OPT_SSL_CA(ssl_ca), PARAM_END)
+      );
+
+      EXPECT_EQ(RESULT_OK,
+        mysqlx_session_option_get(opt, MYSQLX_OPT_SSL_CA, buf)
+      );
+      EXPECT_STREQ(ssl_ca, buf);
+    }
+
+    if (local_sess)
+      mysqlx_session_close(local_sess);
+
+    local_sess = mysqlx_get_session_from_options(opt, &error);
+
+    EXPECT_TRUE(local_sess)
+      << "Could not connect to xplugin at " << get_port()
+      << "; " << mysqlx_error_message(error)
+      << " ERROR CODE: " << mysqlx_error_num(error);
+
+    if (!local_sess)
+    {
+      mysqlx_free(error);
+      return;
+    }
+
+    LOG() << "Connected...";
+
+    std::string ssl = get_ssl_cipher(local_sess);
+
+    if (!ssl_enable)
+    {
+      EXPECT_TRUE(ssl.empty());
+    }
+    else
+    {
+      EXPECT_FALSE(ssl.empty());
+      LOG() << "SSL Cipher: " << ssl;
+    }
+  };
+
+  /*
+    When using SHA256_MEMORY authentication SSL connection must be made first
+    (to populate cache?) -- otherwise non-SSL connection will not work because
+    of a bug/quirk in SHA256_MEMORY server-side implementation.
+  */
+
+  check_ssl(true);
+  check_ssl(false);
+
+  const char *ca = get_ca();
+
+  if (ca)
+  {
+    check_ssl(true, ca);
 
     /*
       ssl options don't change eachother, so no error occurs if ssl is disabled
       and SSL_CA is set.
     */
 
+    mysqlx_session_options_t *opt1 = mysqlx_session_options_new();
+
+    for (auto ssl_mode : { SSL_MODE_REQUIRED, SSL_MODE_DISABLED })
     {
-      mysqlx_session_options_t *opt1 = mysqlx_session_options_new();
+      LOG()
+        << "Setting SSL_CA option together with SSL_MODE "
+        << (SSL_MODE_REQUIRED == ssl_mode ? "REQUIRED" : "DISABLED");
 
-      for (unsigned i = 0; i < 2; ++i)
-      {
+      EXPECT_EQ(RESULT_OK,
+        mysqlx_session_option_set(opt1, OPT_SSL_MODE(ssl_mode), PARAM_END)
+      );
 
-        EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt1,
-          OPT_SSL_MODE(i > 0 ? SSL_MODE_REQUIRED : SSL_MODE_DISABLED),
-          PARAM_END
-          ));
-
-        EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt1,
-          OPT_SSL_CA(ca.c_str()), PARAM_END
-          ));
-      }
-
-      mysqlx_free(opt1);
+      EXPECT_EQ(RESULT_OK,
+        mysqlx_session_option_set(opt1, OPT_SSL_CA(ca), PARAM_END)
+      );
     }
 
-    goto DO_CONNECT;
+    mysqlx_free(opt1);
   }
 
   mysqlx_session_close(local_sess);
   mysqlx_free(opt);
+
+  LOG() << "Setting SSL_CA to wrong file";
 
   {
     /*
@@ -1514,8 +1542,7 @@ DO_CONNECT:
     EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(opt1,
       OPT_HOST(get_host()),
       OPT_PORT(get_port()),
-      OPT_USER(get_user()),
-      OPT_PWD(get_password()),
+      OPT_USER(u.name().c_str()),
       OPT_SSL_MODE(SSL_MODE_VERIFY_CA),
       OPT_SSL_CA("wrong_ca.pem"),
       PARAM_END
@@ -1529,7 +1556,7 @@ DO_CONNECT:
       mysqlx_free(opt1);
       FAIL() << "Should not connect to xplugin. ";
     }
-    cout << "Expected error: " << mysqlx_error_message(error) << endl;
+    LOG() << "Expected error: " << mysqlx_error_message(error);
     mysqlx_free(error);
 
     mysqlx_free(opt1);
