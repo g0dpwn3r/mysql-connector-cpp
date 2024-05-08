@@ -182,7 +182,7 @@ macro(main)
 
     # System-wide install, DEB or RPM layout.
 
-    set(INCLUDE_PATH "/usr/include/mysql-cppconn-8")
+    set(INCLUDE_PATH "/usr/include/mysql-cppconn-@CONCPP_VERSION_MAJOR@")
     get_filename_component(LIB_PATH "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 
     file(GLOB found "${LIB_PATH}/*libmysqlcppconn*")
@@ -355,7 +355,7 @@ function(find_connector which)
     set(base_name "mysqlcppconn")
     set(target_name "concpp-jdbc")
   else()
-    set(base_name "mysqlcppconn8")
+    set(base_name "mysqlcppconn@CONCPP_VERSION_MAJOR@")
     set(target_name "concpp-xdevapi")
   endif()
 
