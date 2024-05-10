@@ -43,6 +43,7 @@ int main(int argc, char** argv)
   const char* mysql_port = getenv("MYSQL_PORT");
   const char* mysql_user = getenv("MYSQL_USER");
   const char* mysql_password = getenv("MYSQL_PASSWORD");
+  const char* test_filter = getenv("TEST_FILTER");
 
   std::string url(TEST_DEFAULT_HOST);
   std::string user(TEST_DEFAULT_LOGIN);
@@ -79,6 +80,8 @@ int main(int argc, char** argv)
   defaultStringValues.insert(Properties::value_type("dbUser"  ,user ));
   defaultStringValues.insert(Properties::value_type("dbPasswd",pass));
   defaultStringValues.insert(Properties::value_type("dbSchema",database));
+  if (test_filter)
+    defaultStringValues.insert(Properties::value_type("filter", test_filter));
 
   std::map<String, bool> defaultBoolValues;
 
