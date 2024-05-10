@@ -2394,7 +2394,7 @@ void connection::default_connector_attributes() {
       "ASC;";
 
   std::map<sql::SQLString, sql::SQLString> attributes = {
-      {"_connector_version", MYCPPCONN_DM_VERSION},
+      {"_connector_version", con->getMetaData()->getDriverVersion()},
       {"_connector_license", MYSQL_CONCPP_LICENSE},
       {"_connector_name", "mysql-connector-cpp"}};
 
