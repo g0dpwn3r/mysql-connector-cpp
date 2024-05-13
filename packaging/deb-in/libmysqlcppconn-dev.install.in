@@ -23,18 +23,18 @@
 
 usr/lib/*/libmysqlcppconn.so
 usr/lib/*/libmysqlcppconn-static.a
-usr/lib/*/libmysqlcppconn8.so
-usr/lib/*/libmysqlcppconn8-static.a
+usr/lib/*/libmysqlcppconn9.so
+usr/lib/*/libmysqlcppconn9-static.a
 usr/lib/*/cmake/mysql-concpp/mysql-concpp-config.cmake
 usr/lib/*/cmake/mysql-concpp/mysql-concpp-config-version.cmake
 
 usr/include/mysqlx/*.h usr/include/mysql-cppconn-8/mysqlx
-usr/include/mysqlx/devapi/*.h usr/include/mysql-cppconn-8/mysqlx/devapi
-usr/include/mysqlx/devapi/detail/*.h usr/include/mysql-cppconn-8/mysqlx/devapi/detail
-usr/include/mysqlx/common/*.h usr/include/mysql-cppconn-8/mysqlx/common
-usr/include/mysql/*.h usr/include/mysql-cppconn-8/mysql
-usr/include/jdbc/*.h usr/include/mysql-cppconn-8/jdbc
-usr/include/jdbc/cppconn/*.h usr/include/mysql-cppconn-8/jdbc/cppconn
+usr/include/mysqlx/devapi/*.h usr/include/mysql-cppconn-9/mysqlx/devapi
+usr/include/mysqlx/devapi/detail/*.h usr/include/mysql-cppconn-9/mysqlx/devapi/detail
+usr/include/mysqlx/common/*.h usr/include/mysql-cppconn-9/mysqlx/common
+usr/include/mysql/*.h usr/include/mysql-cppconn-9/mysql
+usr/include/jdbc/*.h usr/include/mysql-cppconn-9/jdbc
+usr/include/jdbc/cppconn/*.h usr/include/mysql-cppconn-9/jdbc/cppconn
 
 # Build info
 /usr/INFO_SRC /usr/share/doc/libmysqlcppconn-dev
