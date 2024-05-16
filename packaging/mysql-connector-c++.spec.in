@@ -153,7 +153,7 @@ rm %{buildroot}/usr/*.cmake
 
 %files
 %doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
-%{_libdir}/libmysqlcppconn9.so.@ABI_VERSION_MAJOR@*
+%{_libdir}/libmysqlcppconnx.so.@ABI_VERSION_MAJOR@*
 
 %files jdbc
 %doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
@@ -163,9 +163,8 @@ rm %{buildroot}/usr/*.cmake
 %doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
 %{_libdir}/libmysqlcppconn.so
 %{_libdir}/libmysqlcppconn-static.a
-%{_libdir}/libmysqlcppconn9.so
-%{_libdir}/libmysqlcppconn9-static.a
-%{_includedir}/mysql-cppconn
+%{_libdir}/libmysqlcppconnx.so
+%{_libdir}/libmysqlcppconnx-static.a
 %{_libdir}/cmake/mysql-concpp/mysql-concpp-config-version.cmake
 %{_libdir}/cmake/mysql-concpp/mysql-concpp-config.cmake
 %dir %{_includedir}/mysql-cppconn-9

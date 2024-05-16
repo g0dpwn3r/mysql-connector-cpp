@@ -355,7 +355,7 @@ function(find_connector which)
     set(base_name "mysqlcppconn")
     set(target_name "concpp-jdbc")
   else()
-    set(base_name "mysqlcppconn@CONCPP_VERSION_MAJOR@")
+    set(base_name "mysqlcppconnx")
     set(target_name "concpp-xdevapi")
   endif()
 

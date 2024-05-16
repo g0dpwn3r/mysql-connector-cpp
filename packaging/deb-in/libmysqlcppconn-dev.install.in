@@ -23,8 +23,8 @@
 
 usr/lib/*/libmysqlcppconn.so
 usr/lib/*/libmysqlcppconn-static.a
-usr/lib/*/libmysqlcppconn9.so
-usr/lib/*/libmysqlcppconn9-static.a
+usr/lib/*/libmysqlcppconnx.so
+usr/lib/*/libmysqlcppconnx-static.a
 usr/lib/*/cmake/mysql-concpp/mysql-concpp-config.cmake
 usr/lib/*/cmake/mysql-concpp/mysql-concpp-config-version.cmake
 

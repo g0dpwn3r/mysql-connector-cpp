@@ -193,7 +193,7 @@ endif()
 # static runtime.
 #
 
-set(LIB_NAME_BASE "mysqlcppconn${CONCPP_VERSION_MAJOR}")
+set(LIB_NAME_BASE "mysqlcppconnx")
 set(LIB_NAME_STATIC "${LIB_NAME_BASE}-static")
 
 if(WIN32 AND STATIC_MSVCRT)
