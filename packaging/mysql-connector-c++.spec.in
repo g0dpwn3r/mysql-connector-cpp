@@ -61,7 +61,8 @@ Release:        1%{?commercial:.1}%{?dist}
 License:        %{license_type}
 URL:            https://dev.mysql.com/doc/connector-cpp/en/
 Source0:        https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++%{?product_suffix}-%{version}-src.tar.gz
-#BuildRequires:  boost-devel
+# Note: This connector is compatible with the 8.x series.
+Provides: libmysqlcppconn8.so.2()(%{?__isa_bits}bit) = %{version}-%{release}
 BuildRequires:  cmake%{?el6:3}%{?el7:3}
 %if 0%{?fedora} || 0%{?suse_version}
 BuildRequires:  gcc
@@ -138,6 +139,9 @@ popd
 # Remove unwanted files
 rm %{buildroot}/usr/{INFO_SRC,INFO_BIN}
 
+# Add compatibility link
+cd %{buildroot}%{_libdir} && ln -s libmysqlcppconnx.so.2 libmysqlcppconn8.so.2
+
 # Add CMake files to the right location, and remove the incorrect ones
 mkdir -p %{buildroot}%{_libdir}/cmake/mysql-concpp/
 install -D -m 0644 %{buildroot}/usr/*.cmake %{buildroot}%{_libdir}/cmake/mysql-concpp/
@@ -154,6 +158,7 @@ rm %{buildroot}/usr/*.cmake
 %files
 %doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
 %{_libdir}/libmysqlcppconnx.so.@ABI_VERSION_MAJOR@*
+%{_libdir}/libmysqlcppconn8.so.2
 
 %files jdbc
 %doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN

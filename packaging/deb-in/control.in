@@ -11,6 +11,7 @@ Architecture: any
 Section: libs
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
+Provides: libmysqlcppconn8-2 (= ${binary:Version})
 Depends: ${shlibs:Depends}, ${misc:Depends},
  mysql-@DEB_SERVERPRODUCT@-client-plugins,
 Description: MySQL database connector for C++
