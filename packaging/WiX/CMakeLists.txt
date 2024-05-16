@@ -183,16 +183,17 @@ else()
 endif()
 show(BUNDLE_RUNTIME_LIBRARIES)
 
-set(PROGRAM_FILES_FOLDER StandardDirectory)
 
 if(IS64BIT)
   set(IS64BIT "yes")
   set(PLATFORM x64)
   set(UPGRADE_CODE "${UPGRADE_CODE_64_BIT}")
+  set(PROGRAM_FILES_FOLDER ProgramFiles64Folder)
 else()
   set(IS64BIT "no")
   set(PLATFORM x86)
   set(UPGRADE_CODE "${UPGRADE_CODE_32_BIT}")
+  set(PROGRAM_FILES_FOLDER ProgramFilesFolder)
 endif()
 show(IS64BIT)
 
