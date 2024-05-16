@@ -111,10 +111,21 @@ if(NOT INSTALL_LIB_DIR)
   set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR})
 endif()
 
+if(NOT INSTALL_LIB_DIR_DEBUG)
+  set(INSTALL_LIB_DIR_DEBUG "${INSTALL_LIB_DIR}/debug")
+endif()
+
 if(NOT INSTALL_LIB_DIR_STATIC)
   set(INSTALL_LIB_DIR_STATIC "${INSTALL_LIB_DIR}")
   if(VS)
     set(INSTALL_LIB_DIR_STATIC "${INSTALL_LIB_DIR_STATIC}/${VS}")
+  endif()
+endif()
+
+if(NOT INSTALL_LIB_DIR_STATIC_DEBUG)
+  set(INSTALL_LIB_DIR_STATIC_DEBUG "${INSTALL_LIB_DIR_DEBUG}")
+  if(VS)
+    set(INSTALL_LIB_DIR_STATIC_DEBUG "${INSTALL_LIB_DIR_STATIC_DEBUG}/${VS}")
   endif()
 endif()
 
@@ -141,8 +152,19 @@ set(INSTALL_LIB_DIR "${INSTALL_LIB_DIR}"
   CACHE INTERNAL "Library install location (relative to install root)"
 )
 
+set(INSTALL_LIB_DIR_DEBUG "${INSTALL_LIB_DIR_DEBUG}"
+  CACHE INTERNAL
+  "Library install location for debug builds (relative to install root)"
+)
+
 set(INSTALL_LIB_DIR_STATIC "${INSTALL_LIB_DIR_STATIC}"
-  CACHE INTERNAL "Install location for static libraries (relative to install root)"
+  CACHE INTERNAL
+  "Install location for static libraries (relative to install root)"
+)
+
+set(INSTALL_LIB_DIR_STATIC_DEBUG "${INSTALL_LIB_DIR_STATIC_DEBUG}"
+  CACHE INTERNAL
+  "Install location for static libraries for debug builds (relative to install root)"
 )
 
 #

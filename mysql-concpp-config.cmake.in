@@ -530,7 +530,7 @@ function(add_connector_target which tgt base_name)
   unset(lib_path_debug CACHE)
   find_library(lib_path_debug
     NAMES ${base_name}
-    PATHS ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/${vs_suffix}/debug
+    PATHS ${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/debug/${vs_suffix}
     NO_DEFAULT_PATH
     NO_CACHE
   )
@@ -557,7 +557,7 @@ function(add_connector_target which tgt base_name)
   if(WIN32)
 
     set(lib_path_debug
-      "${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/${vs_suffix}/debug/${base_name}.lib"
+      "${MYSQL_CONCPP_RUNTIME_LIBRARY_DIR}/debug/${vs_suffix}/${base_name}.lib"
     )
 
   endif()
