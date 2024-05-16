@@ -182,7 +182,7 @@ macro(main)
 
     # System-wide install, DEB or RPM layout.
 
-    set(INCLUDE_PATH "/usr/include/mysql-cppconn-@CONCPP_VERSION_MAJOR@")
+    set(INCLUDE_PATH "/usr/include/mysql-cppconn")
     get_filename_component(LIB_PATH "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 
     file(GLOB found "${LIB_PATH}/*libmysqlcppconn*")

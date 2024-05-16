@@ -112,7 +112,7 @@ to develop MySQL client applications in C++.
 %global __cmake_test_opts %{nil}
 %endif
 %global __cmake_explicit_opts -DCMAKE_INSTALL_PREFIX="%_prefix" -DCMAKE_C_FLAGS:STRING="%optflags" -DCMAKE_CXX_FLAGS:STRING="%optflags"
-%global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_INCLUDEDIR=%{_includedir}/mysql-cppconn-9 -DWITH_JDBC=ON -DMYSQLCLIENT_STATIC_LINKING=1 -DWITH_SSL=system %{__cmake_test_opts} %{?mysql_opt} -DDEBUG_PREFIX_MAP=OFF
+%global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_INCLUDEDIR=%{_includedir}/mysql-cppconn -DWITH_JDBC=ON -DMYSQLCLIENT_STATIC_LINKING=1 -DWITH_SSL=system %{__cmake_test_opts} %{?mysql_opt} -DDEBUG_PREFIX_MAP=OFF
 %global __cmake_cmd cmake%{?el6:3}%{?el7:3} %{__cmake_common_opts} %{__cmake_explicit_opts} ..
 mkdir build-dynamic && pushd build-dynamic
 pwd
@@ -134,8 +134,8 @@ popd
 pushd build-static
 make DESTDIR=%{buildroot} install
 popd
-# Add compat dir and remove unwanted file
-ln -s mysql-cppconn-9 %{buildroot}%{_includedir}/mysql-cppconn
+
+# Remove unwanted files
 rm %{buildroot}/usr/{INFO_SRC,INFO_BIN}
 
 # Add CMake files to the right location, and remove the incorrect ones
@@ -167,10 +167,7 @@ rm %{buildroot}/usr/*.cmake
 %{_libdir}/libmysqlcppconnx-static.a
 %{_libdir}/cmake/mysql-concpp/mysql-concpp-config-version.cmake
 %{_libdir}/cmake/mysql-concpp/mysql-concpp-config.cmake
-%dir %{_includedir}/mysql-cppconn-9
-%{_includedir}/mysql-cppconn-9/mysqlx
-%{_includedir}/mysql-cppconn-9/mysql
-%{_includedir}/mysql-cppconn-9/jdbc
+%{_includedir}/mysql-cppconn
 
 %changelog
 * Mon May 12 2024 Gipson Pulla <gipson.pulla@oracle.com> - 9.0.0-1
