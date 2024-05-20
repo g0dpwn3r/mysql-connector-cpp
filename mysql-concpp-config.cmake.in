@@ -594,10 +594,13 @@ function(find_deps)
 
     # Try to find the bundled OpenSSL
 
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".dll" ".dylib")
+
     unset(ssl_lib CACHE)
     find_library(ssl_lib
       NAMES ssl libssl
-      PATHS ${LIB_PATH}/${vs_suffix}
+      PATHS ${LIB_PATH}
+      PATH_SUFFIXES private ${vs_suffix}
       NO_DEFAULT_PATH
       NO_CACHE
     )
@@ -605,7 +608,8 @@ function(find_deps)
     unset(ssl_crypto CACHE)
     find_library(ssl_crypto
       NAMES crypto libcrypto
-      PATHS ${LIB_PATH}/${vs_suffix}
+      PATHS ${LIB_PATH}
+      PATH_SUFFIXES private ${vs_suffix}
       NO_DEFAULT_PATH
       NO_CACHE
     )
