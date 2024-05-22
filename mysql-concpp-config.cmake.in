@@ -90,17 +90,17 @@
 # Connector library targets are configured to use OpenSSL from appropriate
 # locations. This can be overriden by user -- if `mysql::openssl` target
 # is defined prior to loading `mysql-concpp` package then this target is used
-# to resolve dependency on OpenSSL library.
+# to resolve dependency on the OpenSSL library.
 #
 # MySQL client library dependency
 # -------------------------------
 #
-# If legacy library is built with the MySQL client library linked dynamically
-# then the `concpp-jdbc-static` target depends on `libmysqlclient` which should
-# be available on the build host. If it is installed in non-standard location
-# then config variable WITH_MYSQL should be set to point at the MySQL install
-# location. The library search path will be augmented to find the client
-# library installed at that location.
+# If JDBC connector library is built with the MySQL client library linked
+# dynamically then the `concpp-jdbc-static` target depends on `libmysqlclient`
+# which should be available on the build host. If it is installed
+# in non-standard location then config variable WITH_MYSQL should be set
+# to point at the MySQL install location. The library search path will
+# be augmented to find the client library installed at that location.
 #
 # Note that connector libraries published by MySQL have the client library
 # statically linked in so that there is no external dependency on it.
