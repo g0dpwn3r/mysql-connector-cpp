@@ -1,0 +1,16 @@
+#! /bin/sh
+set -e
+
+LIBDIR=/usr/lib/`dpkg-architecture -q DEB_TARGET_MULTIARCH`
+
+cd ${LIBDIR}
+
+# Do nothing if old name is already present
+test -e libmysqlcppconn8.so.2 && return 0
+
+# Also skip compatibility link if the target library is not present
+# (e.g, the ABI version has changed)
+test -e libmysqlcppconnx.so.2 || return 0
+
+#echo "Creating compatibility link: ${LIBDIR}/libmysqlcppconn8.so.2"
+ln -s libmysqlcppconnx.so.2 libmysqlcppconn8.so.2

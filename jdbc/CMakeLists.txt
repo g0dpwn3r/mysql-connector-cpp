@@ -336,9 +336,9 @@ install(TARGETS connector-jdbc
 
 install(TARGETS connector-jdbc
   CONFIGURATIONS Debug
-  ARCHIVE DESTINATION "${INSTALL_LIB_DIR_STATIC}/debug" COMPONENT JDBCDev
-  RUNTIME DESTINATION "${INSTALL_LIB_DIR}/debug" COMPONENT JDBCDll
-  LIBRARY DESTINATION "${INSTALL_LIB_DIR}/debug" COMPONENT JDBCDll
+  ARCHIVE DESTINATION "${INSTALL_LIB_DIR_STATIC_DEBUG}" COMPONENT JDBCDev
+  RUNTIME DESTINATION "${INSTALL_LIB_DIR_DEBUG}" COMPONENT JDBCDll
+  LIBRARY DESTINATION "${INSTALL_LIB_DIR_DEBUG}" COMPONENT JDBCDll
 )
 
 
@@ -352,7 +352,7 @@ if(MSVC AND NOT BUILD_STATIC)
 
   install(FILES $<TARGET_PDB_FILE:connector-jdbc>
     CONFIGURATIONS Debug
-    DESTINATION "${INSTALL_LIB_DIR}/debug"
+    DESTINATION "${INSTALL_LIB_DIR_DEBUG}"
     COMPONENT Debuginfo
   )
 
@@ -494,18 +494,12 @@ set(IGNORED_LIBS
   rest_api rest_connection_pool rest_metadata_cache rest_router rest_routing
   harness-library  mysqlharness_stdx mysqlharness_tls
   router_openssl router_protobuf routing
-  mysqlrouter_mysqlxmessages
-  mysqlrouter_connection_pool
-  mysqlrouter_http
-  mysqlrouter_http_auth_backend
-  mysqlrouter_http_auth_realm
-  mysqlrouter_io_component
-  mysqlrouter_lib
-  mysqlrouter_metadata_cache
-  mysqlrouter_routing
   # New DLLs added in .33
   destination_status
-  mysqlrouter_destination_status
+  # Ignore all mysqlrouter_* DLLs
+  mysqlrouter_
+  # New DLLs added in 9.0.0
+  mysqlharness
 )
 
 
