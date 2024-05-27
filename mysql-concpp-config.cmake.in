@@ -593,8 +593,9 @@ function(find_deps)
   if(MYSQL_CONCPP_ROOT_DIR)
 
     # Try to find the bundled OpenSSL
+    # Note: On Windows we look for the import library with .lib extension.
 
-    set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".dll" ".dylib")
+    set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".lib" ".dylib")
 
     unset(ssl_lib CACHE)
     find_library(ssl_lib
