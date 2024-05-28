@@ -1350,6 +1350,50 @@ MySQL_Prepared_Statement::setString(unsigned int parameterIndex, const sql::SQLS
 /* }}} */
 
 
+/* {{{ MySQL_Prepared_Statement::setVector() -I- */
+void
+MySQL_Prepared_Statement::setVector(unsigned int parameterIndex,
+    const std::vector<float> &vec)
+{
+  CPP_ENTER("MySQL_Prepared_Statement::setVector");
+  CPP_INFO_FMT("this=%p", this);
+  checkClosed();
+#if HAVE_TYPE_VECTOR
+  if (parameterIndex == 0 || parameterIndex > param_count) {
+      CPP_ERR("Invalid parameterIndex");
+      throw InvalidArgumentException("MySQL_Prepared_Statement::setVector: invalid 'parameterIndex'");
+  }
+
+  if (vec.size() > 16382) {
+      CPP_ERR("Vector data is too long");
+      throw InvalidArgumentException("MySQL_Prepared_Statement::setVector: data is too long");
+  }
+
+  --parameterIndex; /* DBC counts from 1 */
+
+  enum_field_types t = MYSQL_TYPE_VECTOR;
+
+  param_bind->set(parameterIndex);
+  MYSQL_BIND * param = &param_bind->getBindObject()[parameterIndex];
+
+  delete [] static_cast<char *>(param->buffer);
+
+  param->buffer_type	= t;
+  unsigned long byte_len = vec.size() * sizeof(float);
+  param->buffer	= memcpy(new char[byte_len], vec.data(), byte_len);
+  param->buffer_length = byte_len;
+  param->is_null_value = byte_len > 0;
+
+  delete param->length;
+  param->length = new unsigned long(byte_len);
+
+#else
+  throw MethodNotImplementedException("MySQL_Prepared_Statement::setVector");
+#endif
+}
+/* }}} */
+
+
 /* {{{ MySQL_Prepared_Statement::cancel() -U- */
 void
 MySQL_Prepared_Statement::cancel()

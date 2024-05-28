@@ -4345,15 +4345,22 @@ MySQL_ConnectionMetaData::supportsConvert()
 bool
 MySQL_ConnectionMetaData::supportsConvert(int fromType, int toType)
 {
+
+
   CPP_ENTER("MySQL_ConnectionMetaData::supportsConvert");
   switch (fromType) {
     // The char/binary types can be converted to pretty much anything.
-    case sql::DataType::CHAR:
-    case sql::DataType::VARCHAR:
-    case sql::DataType::LONGVARCHAR:
     case sql::DataType::BINARY:
     case sql::DataType::VARBINARY:
     case sql::DataType::LONGVARBINARY:
+#if HAVE_TYPE_VECTOR
+      // Binary types can be converted to VECTOR
+      if (toType == sql::DataType::VECTOR)
+        return true;
+#endif
+    case sql::DataType::CHAR:
+    case sql::DataType::VARCHAR:
+    case sql::DataType::LONGVARCHAR:
     {
       switch (toType) {
         case sql::DataType::DECIMAL:
@@ -4470,6 +4477,24 @@ MySQL_ConnectionMetaData::supportsConvert(int fromType, int toType)
           return false;
       }
     }
+
+#if HAVE_TYPE_VECTOR
+    // VECTOR can only be converted to binary types
+    case sql::DataType::VECTOR:
+    {
+      switch (toType)
+      {
+        case sql::DataType::BINARY:
+        case sql::DataType::VARBINARY:
+        case sql::DataType::LONGVARBINARY:
+          return true;
+
+        default:
+          return false;
+      }
+    }
+#endif
+
     // We shouldn't get here!
     default:
       return false; // not sure

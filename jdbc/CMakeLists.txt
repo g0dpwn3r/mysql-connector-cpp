@@ -227,6 +227,19 @@ endif()
 
 ############################################################################
 #
+#  Check support for vector type in mysql.
+#
+TRY_COMPILE(COMPILE_RESULT ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_LIST_DIR}/cmake/type_vector.c
+CMAKE_FLAGS "-DINCLUDE_DIRECTORIES='${MYSQL_INCLUDE_DIR}'")
+MESSAGE(STATUS "Checking if MySQL client lib supports vector type - ${COMPILE_RESULT}")
+
+IF(COMPILE_RESULT)
+    ADD_DEFINITIONS(-DHAVE_TYPE_VECTOR)
+ENDIF(COMPILE_RESULT)
+
+
+############################################################################
+#
 #  Main components and connector library target.
 #
 

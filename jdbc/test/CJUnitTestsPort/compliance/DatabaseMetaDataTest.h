@@ -54,6 +54,17 @@ namespace testsuite
 namespace compliance
 {
 
+/*
+  NOTE: This list contains all data types in sql::DataType enum.
+        When newe types are added the list must be extended.
+*/
+#define DATA_TYPE_LIST(X) \
+    X(BIT) X(TINYINT) X(SMALLINT) X(MEDIUMINT) X(INTEGER) X(BIGINT) \
+    X(REAL) X(DOUBLE) X(DECIMAL) X(NUMERIC) X(CHAR) X(BINARY) \
+    X(VARCHAR) X(VARBINARY) X(LONGVARCHAR) X(LONGVARBINARY) X(TIMESTAMP) \
+    X(DATE) X(TIME) X(YEAR) X(GEOMETRY) X(ENUM) X(SET) X(SQLNULL) X(JSON) \
+    X(VECTOR)
+
 class DatabaseMetaDataTest : public BaseTestFixture
 {
 private:
@@ -248,6 +259,7 @@ public:
     TEST_CASE(testSupportsConvert35);
     TEST_CASE(testSupportsConvert36);
     TEST_CASE(testSupportsConvert37);
+    TEST_CASE(testSupportsConvertVector);
     TEST_CASE(testSupportsCoreSQLGrammar);
     TEST_CASE(testSupportsCorrelatedSubqueries);
     TEST_CASE(testSupportsDataDefinitionAndDataManipulationTransactions);
@@ -4589,6 +4601,37 @@ public:
   /* throws std::exception * */
 
   void testSupportsConvert37();
+  /*
+   * @testName:         testSupportsConvertVector
+   * @assertion:        The DatabaseMetaData provides information about the database.
+   *                    (See section 15.1 of JDBC 2.0 API Reference & Tutorial 2nd edition)
+   *
+   *                    A  driver must provide full support for DatabaseMetaData and
+   *                    ResultSetMetaData.  This implies that all of the methods in the
+   *                    DatabaseMetaData interface must be implemented and must behave as
+   *                    specified in the JDBC 1.0 and 2.0 specifications.  None of the
+   *                    methods in DatabaseMetaData and ResultSetMetaData may throw an
+   *                    exception because they are not implemented. (See section 6.2.2.3
+   *                    of Java2 Platform Enterprise Edition (J2EE) Specification v1.2)
+   *                    The supportsConvert(int fromType, int toType) method must return
+   *                    a boolean value; true if the database supports the scalar function
+   *                    CONVERT for conversions between the JDBC types fromType and toType
+   *                    and false otherwise. (See JDK 1.2.2 API documentation)
+   *
+   * @test_Strategy:    Get the DataBaseMetaData object from the Connection to the DataBase
+   *                    and call the supportsConvert(VECTOR, <TARGET_TYPE>),
+   *                    supportsConvert(<SOURCE_TYPE>, VECTOR) to check convertibility
+   *                    from and to VECTOR type. It is expected that data
+   *                    types representing binary data such as sql::DataType::BINARY,
+   *                    sql::DataType::VARBINARY or sql::DataType::LONGVARBINARY should
+   *                    be supported as <TARGET_TYPE> or <SOURCE_TYPE>. All other types
+   *                    should be returned as unsupported.
+   *
+   */
+
+  /* throws std::exception * */
+
+  void testSupportsConvertVector();
   /*
    * @testName:         testSupportsCoreSQLGrammar
    * @assertion:        The DatabaseMetaData provides information about the database.

@@ -66,7 +66,8 @@ public:
     ENUM,
     SET,
     SQLNULL,
-    JSON
+    JSON,
+    VECTOR
   };
 };
 

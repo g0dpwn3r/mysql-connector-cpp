@@ -634,6 +634,51 @@ MySQL_ResultSet::getUInt64(const sql::SQLString& columnLabel) const
 }
 /* }}} */
 
+/* {{{ MySQL_ResultSet::getVector() -I- */
+std::vector<float> MySQL_ResultSet::getVector(const uint32_t columnIndex) const
+{
+    CPP_ENTER("MySQL_ResultSet::getVector(int)");
+#if HAVE_TYPE_VECTOR
+    /* isBeforeFirst checks for validity */
+    if (isBeforeFirstOrAfterLast()) {
+        throw sql::InvalidArgumentException(
+            "MySQL_ResultSet::getVector: can't fetch because not on result set");
+  }
+
+    if (columnIndex == 0 || columnIndex > num_fields) {
+        throw sql::InvalidArgumentException(
+            "MySQL_ResultSet::getVector: invalid value of 'columnIndex'");
+    }
+    // NOTE: Should we allow reading only from MYSQL_TYPE_VECTOR?
+    if (getFieldMeta(columnIndex)->type != MYSQL_TYPE_VECTOR) {
+        throw sql::InvalidArgumentException(
+            "MySQL_ResultSet::getVector: invalid field type");
+    }
+
+    if (row == NULL || row[columnIndex - 1] == NULL) {
+      was_null = true;
+      return {};
+    }
+
+    // Get length in vector elements (float) instead of bytes
+    size_t len = result->fetch_lengths()[columnIndex - 1] / sizeof(float);
+    float *row_values = (float*)row[columnIndex - 1];
+    was_null = false;
+    return std::vector<float>(row_values, row_values + len);
+#else
+    throw sql::MethodNotImplementedException(
+        "MySQL_ResultSet::getVector()");
+#endif
+}
+/* }}} */
+
+
+/* {{{ MySQL_ResultSet::getVector() -I- */
+std::vector<float> MySQL_ResultSet::getVector(const sql::SQLString &columnLabel) const
+{
+    CPP_ENTER("MySQL_ResultSet::getVector(int)");
+    return getVector(findColumn(columnLabel));
+}
 
 /* {{{ MySQL_ResultSet::getMetaData() -I- */
 sql::ResultSetMetaData *

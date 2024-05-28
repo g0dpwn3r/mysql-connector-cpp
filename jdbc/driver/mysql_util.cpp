@@ -509,6 +509,10 @@ mysql_type_to_datatype(const MYSQL_FIELD * const field,
     case MYSQL_TYPE_JSON:
       return sql::DataType::JSON;
 #endif //LIBMYSQL_VERSION_ID > 50700
+#if HAVE_TYPE_VECTOR
+    case MYSQL_TYPE_VECTOR:
+      return sql::DataType::VECTOR;
+#endif
     default:
       return sql::DataType::UNKNOWN;
   }
@@ -725,6 +729,10 @@ const char *mysql_type_to_string(
     case MYSQL_TYPE_JSON:
       return "JSON";
 #endif //LIBMYSQL_VERSION_ID > 50700
+#if HAVE_TYPE_VECTOR
+    case MYSQL_TYPE_VECTOR:
+      return "VECTOR";
+#endif
     default:
       return "UNKNOWN";
   }

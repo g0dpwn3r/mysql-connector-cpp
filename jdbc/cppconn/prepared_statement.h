@@ -90,6 +90,8 @@ public:
 
   virtual void setString(unsigned int parameterIndex, const sql::SQLString& value) = 0;
 
+  virtual void setVector(unsigned int parameterIndex, const std::vector<float>& value) = 0;
+
   virtual PreparedStatement * setResultSetType(sql::ResultSet::enum_type type) = 0;
 };
 

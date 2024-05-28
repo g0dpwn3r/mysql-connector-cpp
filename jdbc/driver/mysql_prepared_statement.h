@@ -194,6 +194,9 @@ public:
  void setString(unsigned int parameterIndex,
                 const sql::SQLString &value) override;
 
+ void setVector(unsigned int parameterIndex,
+                const std::vector<float> &vec) override;
+
  void setQueryTimeout(unsigned int seconds) override;
 
  sql::PreparedStatement *setResultSetType(

@@ -141,6 +141,11 @@ MySQL_ResultSetMetaData::getColumnDisplaySize(unsigned int columnIndex)
   }
   int ret = field->length / cs->char_maxlen;
 
+#ifdef HAVE_TYPE_VECTOR
+  if (field->type == MYSQL_TYPE_VECTOR)
+    ret = (field->length / sizeof(float)) * 15 + 1;
+#endif
+
   CPP_INFO_FMT("column=%u name=%s display_size=%d", columnIndex, getFieldMeta(columnIndex)->name, ret);
   return ret;
 }
@@ -275,7 +280,14 @@ MySQL_ResultSetMetaData::getScale(unsigned int columnIndex)
   checkValid();
   checkColumnIndex(columnIndex);
 
-  unsigned int ret = getFieldMeta(columnIndex)->decimals;
+  auto meta = getFieldMeta(columnIndex);
+  unsigned int ret = meta->decimals;
+#ifdef HAVE_TYPE_VECTOR
+  // TODO: For some reason decimals is not zero for VECTOR.
+  //       Need to investigate later.
+  if (meta->type == MYSQL_TYPE_VECTOR)
+    ret = 0;
+#endif
   CPP_INFO_FMT("column=%u scale=%d", columnIndex, ret);
   return ret;
 }
