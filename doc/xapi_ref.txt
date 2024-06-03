@@ -1,5 +1,5 @@
-Connector/C++ 8 X DevAPI for C Example {#xapi_example}
-======================================================
+Connector/C++ X DevAPI for C Example {#xapi_example}
+====================================================
 
 Connector/C++ implements a variant of X DevAPI that can be used by applications
 written in plain C - the X DevAPI for C. It allows one to work with

@@ -1,5 +1,5 @@
-Using Connector/C++ 8  {#usage}
-===============================
+Using Connector/C++ {#usage}
+============================
 
 It is easiest to use Connector/C++ from a CMake project. For any target that
 uses Connector/C++ it is enough to link that target with the `mysql::concpp`
@@ -36,7 +36,7 @@ variable to the top-level Connector/C++ install location:
 
 @note
 The `mysql-concpp` cmake module is defined starting from version 8.3.0. For
-earlier versions of Connector/C++ 8 one has to configure build manually setting
+earlier versions of Connector/C++ one has to configure build manually setting
 correct include paths, link libraries etc. See @ref manual_config
 
 Connector/C++ implements three APIs for communicating with MySQL Server. Two
@@ -67,16 +67,6 @@ For earlier versions the following set of headers needs to be included instead:
 where the exact set of headers represented by `<mysql/cppconn/*.h>` pattern
 depends on the APIs used in the code.
 
-@note Legacy code writen against erlier versions of Connector/C++ might have
-includes of the following form (without `mysql/` prefix):
-~~~~
-#include <mysql_driver.h>
-#include <mysql_connection.h>
-#include <cppconn/*.h>
-~~~~
-To build such code with Connector/C++ 8 without modifying it, add
-`${mysql-concpp_DIR}/include/jdbc` to the include path.
-
 
 ### Linking with Connector/C++ dynamically
 
@@ -84,11 +74,11 @@ Connector targets defined by `mysql-concpp` module refer to shared connector
 libraries and imply dynamic linking. Depending on the platform, the shared
 Connector/C++ library is named:
 
-  - `libmysqlcppconn8.so` on Unix platforms (soname `libmysqlcppconn8.so.B`)
-  - `libmysqlcppconn8.dylib` on the OSX platform (link name
-    `libmysqlcppconn8.B.dylib`)
-  - `mysqlcppconn8-B-vs14.dll` on Windows platforms
-    (with import library vs14/mysqlcppconn8.lib).
+  - `libmysqlcppconnx.so` on Unix platforms (soname `libmysqlcppconnx.so.B`)
+  - `libmysqlcppconnx.dylib` on the OSX platform (link name
+    `libmysqlcppconnx.B.dylib`)
+  - `mysqlcppconnx-B-vs14.dll` on Windows platforms
+    (with import library vs14/mysqlcppconnx.lib).
 
 The classic API implementation is placed in a separate library which
 has `libmysqlcppconn` as the base name: `libmysqlcppconn.so`,
@@ -100,7 +90,7 @@ used when building the application and when running it must match.
 The `-vs14` suffix used in Windows names indicates supported Microsoft Visual
 Studio toolchain version and is there to allow installing and using on the same
 computer connector libraries targeted at different VS versions. Currently
-Connector/C++ supports VS2019 and VS2020 and they both use the same major
+Connector/C++ supports VS2019 and VS2022 and they both use the same major
 toolchain version 14. Therefore only `-vs14` variants of libraries are shipped
 at the moment.
 
@@ -175,14 +165,6 @@ are not found:
 Regardless of whether the "debug" component was required or not, the module
 will set variable `MYSQL_CONCPP_DEBUG_FOUND` to true if debug libraries were
 found.
-
-
-@note
-The `mysql-concpp` module always expects the release variant of the connector
-to be present at the install location. If using custom installation that
-contains only debug builds the `find_module(mysql-concpp)` command will fail
-with error. At this point such debug-only installation can be used only after
-manual setting of appropriate compiler and linker flags.
 
 
 ### Connector dependencies
@@ -308,15 +290,15 @@ following:
   - The `${mysql-concpp_DIR}/include` directory is added to the compiler
     include path.
 
-  - The connector shared library `libmysqlcppconn8.so`
-    (`libmysqlcppconn8.dylib` in case of MacOS) is added to linker inputs. For
+  - The connector shared library `libmysqlcppconnx.so`
+    (`libmysqlcppconnx.dylib` in case of MacOS) is added to linker inputs. For
     the library implementing the classic API the names are `libmysqlcppconn.so`
     and `libmysqlcppconn.dylib`. It is best to specify full paths to these
     libraries which are found at `${mysql-concpp_DIR}/lib64`.
 
   - On Windows the linker line should refer to the import library (rather than
     the DLL) that is located at `${mysql-concpp_DIR}/lib64/vs14`. The import
-    library name is `mysqlcppconn8.lib` (`libmysqlcppconn.lib` for the classic
+    library name is `mysqlcppconnx.lib` (`libmysqlcppconn.lib` for the classic
     library).
 
 We do not try to cover manual build configuration for static linking here. It
@@ -327,7 +309,7 @@ it does in your particular scenario.
 
 
 <!--
-  Copyright (c) 2015, 2020, Oracle and/or its affiliates.
+  Copyright (c) 2015, 2024, Oracle and/or its affiliates.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License, version 2.0, as

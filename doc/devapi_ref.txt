@@ -42,7 +42,7 @@ the [list of X DevAPI classes](@ref devapi).
 The following Connector/C++ application connects to a MySQL Server over
 X protocol, creates a document collection, adds a few documents to it, queries
 the collection and displays the result. The sample code can be found in file
-`testapp/devapi_test.cc` in the source distribution of Connector/C++ 8.
+`testapp/devapi_test.cc` in the source distribution of Connector/C++.
 See @ref usage for instructions on how to build the sample code.
 
 @dontinclude devapi_test.cc
