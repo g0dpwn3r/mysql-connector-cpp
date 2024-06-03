@@ -2727,10 +2727,12 @@ TEST_F(xapi, tls_ver_ciphers)
     printf(ERR); \
     FAIL(); }
 
-  std::set<std::string> versions = {"TLSv1.1" ,"TLSv1.2"};
+  std::set<std::string> versions = {"TLSv1.2" ,"TLSv1.3"};
   std::map<std::string, std::string> suites_map = {
-    { "DHE-RSA-AES128-GCM-SHA256", "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"},
-    { "DES-CBC3-SHA", "TLS_RSA_WITH_3DES_EDE_CBC_SHA" }
+    // mandatory 1.2 cipher
+    { "ECDHE-RSA-AES128-GCM-SHA256", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+    // approved 1.3 cipher
+    { "TLS_AES_128_GCM_SHA256", "TLS_AES_128_GCM_SHA256" }
   };
 
   std::string versions_str;
@@ -2807,6 +2809,11 @@ TEST_F(xapi, tls_ver_ciphers)
     mysqlx_session_options_t *opt = mysqlx_session_options_new();
     mysqlx_session_t *sess;
     mysqlx_error_t *error = NULL;
+    // Note: make sure that one of the ciphers is acceptable
+    string suites =
+      "  DHE-RSA-AES128-GCM-SHA256 , \t\n"
+      + suites_map.begin()->second + " ";
+    const char * suites_str = suites.c_str();
 
     // Test parsing of comma separated list values
 
@@ -2818,7 +2825,7 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_PWD(get_password()),
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS("\t TLSv1.1,\n TLSv1.2 "),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
+      OPT_TLS_CIPHERSUITES(suites_str),
       PARAM_END
     ));
 
@@ -2835,7 +2842,7 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_PWD(get_password()),
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS(""),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
+      OPT_TLS_CIPHERSUITES(suites_str),
       PARAM_END
     ));
 
@@ -2866,7 +2873,7 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_PWD(get_password()),
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS("SSLv1"),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
+      OPT_TLS_CIPHERSUITES(suites_str),
       PARAM_END
     ));
 
@@ -2886,7 +2893,7 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_PWD(get_password()),
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS("foo"),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
+      OPT_TLS_CIPHERSUITES(suites_str),
       PARAM_END
     ));
 
@@ -2919,6 +2926,12 @@ TEST_F(xapi, tls_ver_ciphers)
     EXPECT_EQ(NULL, sess);
 
     // Some ciphers invalid, but some are OK
+
+    string suites1 =
+      "foo,TLS_DHE_RSA_WITH_DES_CBC_SHA,"
+      + suites_map.begin()->second +
+      ",TLS_RSA_WITH_3DES_EDE_CBC_SHA";
+
     mysqlx_free_options(opt);
     opt = mysqlx_session_options_new();
     EXPECT_EQ(RESULT_OK, mysqlx_session_option_set(
@@ -2929,10 +2942,7 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_PWD(get_password()),
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS("TLSv1.1,TLSv1.2"),
-      OPT_TLS_CIPHERSUITES(
-        "foo,TLS_DHE_RSA_WITH_DES_CBC_SHA,"
-        "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_3DES_EDE_CBC_SHA"
-      ),
+      OPT_TLS_CIPHERSUITES(suites1.c_str()),
       PARAM_END
     ));
 
@@ -2956,7 +2966,7 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS("TLSv1.1"),
       OPT_TLS_VERSIONS("TLSv1.2"),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
+      OPT_TLS_CIPHERSUITES(suites_str),
       PARAM_END
     ));
 
@@ -2970,8 +2980,8 @@ TEST_F(xapi, tls_ver_ciphers)
       OPT_PWD(get_password()),
       OPT_SSL_MODE(SSL_MODE_REQUIRED),
       OPT_TLS_VERSIONS("TLSv1.1"),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
-      OPT_TLS_CIPHERSUITES("  DHE-RSA-AES128-GCM-SHA256 , \t\nTLS_DHE_RSA_WITH_AES_128_GCM_SHA256 "),
+      OPT_TLS_CIPHERSUITES(suites_str),
+      OPT_TLS_CIPHERSUITES(suites_str),
       PARAM_END
     ));
     mysqlx_free(opt);

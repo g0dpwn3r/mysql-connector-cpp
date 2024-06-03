@@ -269,13 +269,15 @@ TEST_F(Sess, tls_ver_ciphers)
   SKIP_IF_NO_XPLUGIN;
   SKIP_IF_SERVER_VERSION_LESS(8, 0, 14)
 
-  std::set<std::string> versions = {"TLSv1.1" ,"TLSv1.2"};
+  std::set<std::string> versions = {"TLSv1.2", "TLSv1.3"};
 
   // TOOD: Instead, working ciphers should be selected from the current cipher list(s).
 
   std::map<std::string, std::string> suites_map = {
-    { "DHE-RSA-AES128-GCM-SHA256", "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"},
-    { "DES-CBC3-SHA", "TLS_RSA_WITH_3DES_EDE_CBC_SHA" }
+    // mandatory 1.2 cipher
+    { "ECDHE-RSA-AES128-GCM-SHA256", "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"},
+    // approved 1.3 cipher
+    { "TLS_AES_128_GCM_SHA256", "TLS_AES_128_GCM_SHA256" }
   };
 
   std::string versions_str;
@@ -329,7 +331,8 @@ TEST_F(Sess, tls_ver_ciphers)
         get_uri() + "/?tls-versions=[TLSv1.1,TLSv1.2]"
         "&tls-ciphersuites=["
           "foo,TLS_DHE_RSA_WITH_DES_CBC_SHA,"
-          "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256,TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+          + suites_map.begin()->second +
+          ",TLS_RSA_WITH_3DES_EDE_CBC_SHA"
         "]"
       );
     );
@@ -427,7 +430,7 @@ TEST_F(Sess, tls_ver_ciphers)
         SessionOption::TLS_CIPHERSUITES,
         std::list<string>{
         "foo", "TLS_DHE_RSA_WITH_DES_CBC_SHA",
-          "TLS_DHE_RSA_WITH_AES_128_GCM_SHA256",
+          suites_map.begin()->second,
           "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
         }
       );
@@ -437,8 +440,8 @@ TEST_F(Sess, tls_ver_ciphers)
       opt.erase(SessionOption::TLS_CIPHERSUITES);
       opt.set(
         SessionOption::TLS_CIPHERSUITES,
-        "foo, TLS_DHE_RSA_WITH_DES_CBC_SHA"
-        ",TLS_DHE_RSA_WITH_AES_128_GCM_SHA256"
+        "foo, TLS_DHE_RSA_WITH_DES_CBC_SHA,"
+        + suites_map.begin()->second +
         ",TLS_RSA_WITH_3DES_EDE_CBC_SHA"
       );
 
