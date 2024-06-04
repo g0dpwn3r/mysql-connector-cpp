@@ -68,6 +68,39 @@ where the exact set of headers represented by `<mysql/cppconn/*.h>` pattern
 depends on the APIs used in the code.
 
 
+Public headers define `MYSQL_CONCPP_VERSION_NUMBER` macro that represents
+the Connector/C++ version number in XYYZZZZ format. For example for
+Connector/C++ 9.2.0 the macro will have the value 9020000.
+
+Connector/C++ applications that use X DevAPI, X DevAPI for C, or the JDBC API
+can use the `MYSQL_CONCPP_VERSION_NUMBER` macro to add conditional tests that
+determine the inclusion or exclusion of API features based on which
+Connector/C++ version introduced them.
+
+@note
+The version macros were introduced in connector version 8.0.30 and can not
+be used to test for earlier versions in which the macro is not defined and thus
+it is treated as 0 in conditional checks. That can produce unexpected
+results, for example:
+~~~~
+#if MYSQL_CONCPP_VERSION_NUMBER > 8000028
+  // this does not compile with the 8.0.29 connector!
+#endif
+
+#if MYSQL_CONCPP_VERSION_NUMBER < 8000028
+  // this compiles with the 8.0.29 connector!
+#endif
+~~~~
+
+Apart from `MYSQL_CONCPP_VERSION_NUMBER` there are also macros with individual
+components of the version number: `MYSQL_CONCPP_VERSION_MAJOR`,
+`MYSQL_CONCPP_VERSION_MINOR` and `MYSQL_CONCPP_VERSION_MICRO`.
+
+@note
+The Connector/C++ product version represented by these macros is unrelated
+to API or ABI versions, which are handled separately.
+
+
 ### Linking with Connector/C++ dynamically
 
 Connector targets defined by `mysql-concpp` module refer to shared connector
