@@ -138,9 +138,6 @@ public:
   virtual SQLString getString(uint32_t columnIndex)  const = 0;
   virtual SQLString getString(const sql::SQLString& columnLabel) const = 0;
 
-  virtual std::vector<float> getVector(uint32_t columnIndex) const = 0;
-  virtual std::vector<float> getVector(const sql::SQLString &columnLabel) const = 0;
-
   virtual enum_type getType() const = 0;
 
   virtual void getWarnings() = 0;
@@ -185,6 +182,9 @@ public:
   virtual size_t rowsCount() const = 0;
 
   virtual bool wasNull() const = 0;
+
+  virtual std::vector<float> getVector(uint32_t columnIndex) const = 0;
+  virtual std::vector<float> getVector(const sql::SQLString &columnLabel) const = 0;
 };
 
 } /* namespace sql */
