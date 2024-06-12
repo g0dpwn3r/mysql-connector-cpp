@@ -21,5 +21,12 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-# Additional license file is needed so overriding this warning
-libmysqlcppconnx2: extra-license-file
+usr/lib/*/libmysqlcppconnx.so.@ABI_VERSION_MAJOR@*
+
+# Build info
+/usr/INFO_SRC /usr/share/doc/@PACKAGE_BASE_NAME@
+/usr/INFO_BIN /usr/share/doc/@PACKAGE_BASE_NAME@
+
+# Legal
+usr/LICENSE.txt /usr/share/doc/@PACKAGE_BASE_NAME@
+usr/README.txt /usr/share/doc/@PACKAGE_BASE_NAME@

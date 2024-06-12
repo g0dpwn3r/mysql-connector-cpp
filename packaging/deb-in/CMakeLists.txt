@@ -108,18 +108,36 @@ ENDIF()
 # by debuild to make the packages
 SET (DEB_ROOT ${CMAKE_SOURCE_DIR}/packaging/deb-in)
 FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/debian)
-FILE(GLOB_RECURSE SOURCEFILES RELATIVE "${DEB_ROOT}" "${DEB_ROOT}/*")
-# Skip the copyright file from the "other" product type
-LIST(REMOVE_ITEM SOURCEFILES "copyright.${DEB_REMOVEPATTERN}")
-LIST(REMOVE_ITEM SOURCEFILES "CMakeLists.txt")
-FOREACH (SOURCEFILE ${SOURCEFILES})
-  STRING(REGEX REPLACE "-packagesource-" "${DEB_PRODUCTNAME}-"
-    TMPFILE ${SOURCEFILE})
-  # Strip away the input file endings from the destination filenames
-  STRING(REGEX REPLACE ".in$" "" DESTFILE ${TMPFILE})
-  CONFIGURE_FILE("${DEB_ROOT}/${SOURCEFILE}"
-    "${CMAKE_BINARY_DIR}/debian/${DESTFILE}" @ONLY)
-ENDFOREACH()
+
+foreach(CF changelog control rules compat)
+  set(src "${DEB_ROOT}/${CF}")
+  set(dst "${CMAKE_BINARY_DIR}/debian/${CF}")
+  # message(STATUS "Preparing: ${dst}")
+  if(EXISTS "${src}")
+    configure_file("${src}" "${dst}" COPYONLY)
+  elseif(EXISTS "${src}.in")
+    configure_file("${src}.in" "${dst}" @ONLY)
+  else()
+    message(SEND_ERROR "Control file not found: ${CF}")
+  endif()
+endforeach()
+
+set(pkg_xdevapi "libmysqlcppconnx${ABI_VERSION_MAJOR}")
+set(pkg_jdbc   "libmysqlcppconn${JDBC_ABI_VERSION_MAJOR}")
+set(pkg_devel  "libmysqlcppconn-dev")
+
+foreach(pkg xdevapi jdbc devel)
+  foreach(ext .install .lintian-overrides -dbgsym.install .postinst)
+    set(PACKAGE_BASE_NAME "${pkg_${pkg}}")
+    set(src "${DEB_ROOT}/${pkg}${ext}.in")
+    set(dst "${CMAKE_BINARY_DIR}/debian/${PACKAGE_BASE_NAME}${ext}")
+    if(EXISTS "${src}")
+      # message(STATUS "Preparing: ${dst}, from: ${src}")
+      configure_file("${src}" "${dst}" @ONLY)
+    endif()
+  endforeach()
+endforeach()
+
 EXECUTE_PROCESS(
   COMMAND chmod +x ${CMAKE_BINARY_DIR}/debian/rules
 )

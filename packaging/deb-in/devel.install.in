@@ -37,9 +37,9 @@ usr/include/jdbc/*.h usr/include/mysql-cppconn/jdbc
 usr/include/jdbc/cppconn/*.h usr/include/mysql-cppconn/jdbc/cppconn
 
 # Build info
-/usr/INFO_SRC /usr/share/doc/libmysqlcppconn-dev
-/usr/INFO_BIN /usr/share/doc/libmysqlcppconn-dev
+/usr/INFO_SRC /usr/share/doc/@PACKAGE_BASE_NAME@
+/usr/INFO_BIN /usr/share/doc/@PACKAGE_BASE_NAME@
 
 # Legal
-usr/LICENSE.txt /usr/share/doc/libmysqlcppconn-dev
-usr/README.txt /usr/share/doc/libmysqlcppconn-dev
+usr/LICENSE.txt /usr/share/doc/@PACKAGE_BASE_NAME@
+usr/README.txt /usr/share/doc/@PACKAGE_BASE_NAME@
