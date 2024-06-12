@@ -13,7 +13,6 @@ Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
 Provides: libmysqlcppconn8-2 (= ${binary:Version})
 Depends: ${shlibs:Depends}, ${misc:Depends},
- mysql-@DEB_SERVERPRODUCT@-client-plugins,
 Description: MySQL database connector for C++
  A C++ interface for communicating with MySQL servers.
 
@@ -23,8 +22,7 @@ Section: libs
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Breaks: libmysqlcppconn9v5
-ReplaceS: libmysqlcppconn9v5
+@JDBC_RECOMMENDS_AND_SUGGESTS@
 Description: MySQL Driver for C++ which mimics the JDBC 4.0 API
  This MySQL Driver for C++ mimics the JDBC 4.0 API.
 
