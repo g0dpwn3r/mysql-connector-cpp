@@ -22,4 +22,4 @@
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
 # Additional license file is needed so overriding this warning
-libmysqlcppconn-dev: extra-license-file
+@PACKAGE_BASE_NAME@: extra-license-file
