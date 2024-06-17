@@ -111,7 +111,7 @@ ENDIF()
 SET (DEB_ROOT ${CMAKE_SOURCE_DIR}/packaging/deb-in)
 FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/debian)
 
-foreach(CF changelog control rules compat)
+foreach(CF changelog control rules compat copyright)
   set(src "${DEB_ROOT}/${CF}")
   set(dst "${CMAKE_BINARY_DIR}/debian/${CF}")
   # message(STATUS "Preparing: ${dst}")
