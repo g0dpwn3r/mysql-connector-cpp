@@ -77,7 +77,11 @@ IF(DEB_CODENAME STREQUAL "sid")
 ENDIF()
 
 #Follow MYSQLCLIENT_STATIC_LINKING option on packaging
-SET (DEB_CMAKE_EXTRAS "${DEB_CMAKE_EXTRAS} -DMYSQLCLIENT_STATIC_LINKING=${MYSQLCLIENT_STATIC_LINKING}")
+if(DEFINED MYSQLCLIENT_STATIC_LINKING)
+  set(DEB_CMAKE_EXTRAS
+    "${DEB_CMAKE_EXTRAS} -DMYSQLCLIENT_STATIC_LINKING=${MYSQLCLIENT_STATIC_LINKING}"
+  )
+endif()
 
 # Timestamp for use in debian/changelog
 IF (NOT DEFINED DEB_CHANGELOG_TIMESTAMP)
@@ -108,7 +112,8 @@ ENDIF()
 
 # All files are configured and copied to the debian/ directory, which is used
 # by debuild to make the packages
-SET (DEB_ROOT ${CMAKE_SOURCE_DIR}/packaging/deb-in)
+
+SET (DEB_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/debian)
 
 foreach(CF changelog control rules compat copyright)

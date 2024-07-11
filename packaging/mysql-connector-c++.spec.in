@@ -30,6 +30,8 @@
 #
 #  mysql_dir     Path to the MySQL installation, where to find the client lib
 #  commercial    If set, is a commercial build
+
+
 %{?mysql_dir:    %global mysql_opt -DMYSQL_DIR=%{mysql_dir}}
 %{!?commercial:  %global license_type GPLv2}
 %{?commercial:   %global license_type Commercial}
@@ -54,6 +56,14 @@
 %endif
 
 %global source_date_epoch_from_changelog 0
+
+###############################################
+# Package specifications
+###############################################
+
+# Note: Double "obsoletes" entries have no effect for GPL packages but
+# for commercial ones they ensure that a commercial package replaces GPL one.
+
 Summary:        MySQL database connector for C++
 Name:           mysql-connector-c++%{?product_suffix}
 Version:        @CONCPP_VERSION@
@@ -63,6 +73,8 @@ URL:            https://dev.mysql.com/doc/connector-cpp/en/
 Source0:        https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++%{?product_suffix}-%{version}-src.tar.gz
 # Note: This connector is compatible with the 8.x series.
 Provides: libmysqlcppconn8.so.2()(%{?__isa_bits}bit) = %{version}-%{release}
+Obsoletes:      mysql-connector-c++%{?product_suffix} < %{version}-%{release}
+Obsoletes:      mysql-connector-c++ < %{version}-%{release}
 BuildRequires:  cmake%{?el6:3}%{?el7:3}
 %if 0%{?fedora} || 0%{?suse_version}
 BuildRequires:  gcc
@@ -70,40 +82,44 @@ BuildRequires:  gcc-c++
 %endif
 %{?gcc_toolset:BuildRequires: %{gcc_toolset}-gcc}
 %{?gcc_toolset:BuildRequires: %{gcc_toolset}-gcc-c++}
-%{!?mysql_dir:BuildRequires: mysql-devel}
 BuildRequires:  openssl-devel
-%{?commercial:Obsoletes: mysql-connector-c++ < %{version}-%{release}}
+
 %description
 A C++ interface for communicating with MySQL servers.
 
+
 %package        jdbc
 Summary:        MySQL Driver for C++ which mimics the JDBC 4.0 API
-%{?commercial:Obsoletes: mysql-connector-c++-jdbc < %{version}-%{release}}
-Obsoletes:      libmysqlcppconn9 < %{version}-%{release}
-Obsoletes:      libmysqlcppconn-devel < %{version}-%{release}
-Provides:       libmysqlcppconn9 = %{version}-%{release}
-Provides:       libmysqlcppconn-devel = %{version}-%{release}
+Provides:       libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@ = %{version}-%{release}
+Obsoletes:      libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@ < %{version}-%{release}
+Obsoletes:      mysql-connector-c++%{?product_suffix}-jdbc < %{version}-%{release}
+Obsoletes:      mysql-connector-c++-jdbc < %{version}-%{release}
 %description    jdbc
 This MySQL Driver for C++ mimics the JDBC 4.0 API.
 
 %package        devel
 Summary:        Development header files and libraries for MySQL C++ client applications
-%if 0%{?commercial}
-Requires:       mysql-connector-c++-commercial =  %{version}-%{release}
-Requires:       mysql-connector-c++-commercial-jdbc =  %{version}-%{release}
+Requires:       mysql-connector-c++%{?product_suffix} =  %{version}-%{release}
+Requires:       mysql-connector-c++%{?product_suffix}-jdbc =  %{version}-%{release}
+Obsoletes:      mysql-connector-c++%{?product_suffix}-devel < %{version}-%{release}
 Obsoletes:      mysql-connector-c++-devel < %{version}-%{release}
-%else
-Requires:       mysql-connector-c++ =  %{version}-%{release}
-Requires:       mysql-connector-c++-jdbc =  %{version}-%{release}
-%endif
 %description    devel
 This package contains the development header files and libraries necessary
 to develop MySQL client applications in C++.
 
+
+###############################################
+# Build instructions
+###############################################
+
 %prep
-%setup -q -n mysql-connector-c++%{product_suffix}-%{version}-src
+%setup -q -n %{name}-%{version}-src
+
 
 %build
+
+SRC=`pwd`
+cd ${RPM_BUILD_DIR}
 
 %{?gcc_toolset:source /opt/rh/%{gcc_toolset}/enable}
 
@@ -113,39 +129,42 @@ to develop MySQL client applications in C++.
 %global __cmake_test_opts %{nil}
 %endif
 %global __cmake_explicit_opts -DCMAKE_INSTALL_PREFIX="%_prefix" -DCMAKE_C_FLAGS:STRING="%optflags" -DCMAKE_CXX_FLAGS:STRING="%optflags"
-%global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_INCLUDEDIR=%{_includedir}/mysql-cppconn -DWITH_JDBC=ON -DMYSQLCLIENT_STATIC_LINKING=1 -DWITH_SSL=system %{__cmake_test_opts} %{?mysql_opt} -DDEBUG_PREFIX_MAP=OFF
-%global __cmake_cmd cmake%{?el6:3}%{?el7:3} %{__cmake_common_opts} %{__cmake_explicit_opts} ..
-mkdir build-dynamic && pushd build-dynamic
-pwd
-%__cmake_cmd
-make %{?_smp_mflags} VERBOSE=1
-popd
-mkdir build-static && pushd build-static
-%__cmake_cmd -DBUILD_STATIC=ON
-make %{?_smp_mflags} VERBOSE=1
-popd
+
+# Note: use relative paths for CMAKE_INSTALL_XXX options
+
+%global __cmake_cmd cmake%{?el6:3}%{?el7:3}
+%global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCMAKE_INSTALL_LIBDIR=.%{_libdir} -DCMAKE_INSTALL_INCLUDEDIR=.%{_includedir}/mysql-cppconn -DWITH_SSL=system -DWITH_JDBC=1 -DMYSQLCLIENT_STATIC_LINKING=1 %{?mysql_opt} %{__cmake_test_opts} -DDEBUG_PREFIX_MAP=OFF
+%global __cmake_config %{__cmake_cmd} %{__cmake_common_opts} %{__cmake_explicit_opts}
+
+rm -rf build-static && mkdir build-static
+%{__cmake_config} -S ${SRC} -B build-static -DBUILD_STATIC=1
+%{__cmake_cmd} --build build-static --verbose
+
+rm -rf build-dynamic && mkdir build-dynamic
+%{__cmake_config} -S ${SRC} -B build-dynamic -DBUILD_STATIC=0
+%{__cmake_cmd} --build build-dynamic --verbose
+
 
 %install
 
-%{?gcc_toolset:source /opt/rh/%{gcc_toolset}/enable}
+cd ${RPM_BUILD_DIR}
 
-pushd build-dynamic
-make DESTDIR=%{buildroot} install
-popd
-pushd build-static
-make DESTDIR=%{buildroot} install
-popd
+# Note: order of installations is important!
+
+%{__cmake_cmd} --install build-static --prefix %{buildroot}
+%{__cmake_cmd} --install build-dynamic --prefix %{buildroot}
 
 # Remove unwanted files
-rm %{buildroot}/usr/{INFO_SRC,INFO_BIN}
+rm %{buildroot}/{INFO_SRC,INFO_BIN}
 
 # Add compatibility link
 cd %{buildroot}%{_libdir} && ln -s libmysqlcppconnx.so.2 libmysqlcppconn8.so.2
 
 # Add CMake files to the right location, and remove the incorrect ones
 mkdir -p %{buildroot}%{_libdir}/cmake/mysql-concpp/
-install -D -m 0644 %{buildroot}/usr/*.cmake %{buildroot}%{_libdir}/cmake/mysql-concpp/
-rm %{buildroot}/usr/*.cmake
+install -D -m 0644 %{buildroot}/*.cmake %{buildroot}%{_libdir}/cmake/mysql-concpp/
+rm %{buildroot}/*.cmake
+
 
 %post -p /sbin/ldconfig
 
@@ -155,26 +174,49 @@ rm %{buildroot}/usr/*.cmake
 
 %postun jdbc -p /sbin/ldconfig
 
+
+###############################################
+# Package contents
+#
+# TODO: use %license for LICENSE.txt? But then it gets installed into
+# /usr/share/licenses/ instead of /usr/share/doc/
+###############################################
+
 %files
-%doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
+%doc LICENSE.txt
+# Note: doc files are specified relative to the main source directory
+%doc README.txt ../build-dynamic/INFO_SRC ../build-dynamic/INFO_BIN
 %{_libdir}/libmysqlcppconnx.so.@ABI_VERSION_MAJOR@*
 %{_libdir}/libmysqlcppconn8.so.2
 
 %files jdbc
-%doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
+%doc LICENSE.txt
+%doc README.txt ../build-dynamic/INFO_SRC ../build-dynamic/INFO_BIN
 %{_libdir}/libmysqlcppconn.so.@JDBC_ABI_VERSION_MAJOR@*
 
 %files devel
-%doc README.txt LICENSE.txt build-dynamic/INFO_SRC build-dynamic/INFO_BIN
+%doc LICENSE.txt
+%doc README.txt ../build-dynamic/INFO_SRC ../build-dynamic/INFO_BIN
 %{_libdir}/libmysqlcppconn.so
 %{_libdir}/libmysqlcppconn-static.a
 %{_libdir}/libmysqlcppconnx.so
 %{_libdir}/libmysqlcppconnx-static.a
 %{_libdir}/cmake/mysql-concpp/mysql-concpp-config-version.cmake
 %{_libdir}/cmake/mysql-concpp/mysql-concpp-config.cmake
+%dir %{_includedir}/mysql-cppconn
 %{_includedir}/mysql-cppconn
 
+
+###############################################
+# Changelog
+###############################################
+
 %changelog
+
+* Thu Jul 11 2024 Rafal Somla <rafal.somla@oracle.com> - 9.1.0-1
+- Fixed provides/obsoletes information
+- Updates to configure/build/install logic
+
 * Mon May 12 2024 Gipson Pulla <gipson.pulla@oracle.com> - 9.0.0-1
 - Bumped the version to 9.0.0 series.
 
