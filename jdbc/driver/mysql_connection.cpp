@@ -774,6 +774,7 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
   {
     sql::SQLString plugin_dir;
     it = properties.find(OPT_PLUGIN_DIR);
+    p_s = nullptr;
 
     if (it != properties.end()) {
       try {
