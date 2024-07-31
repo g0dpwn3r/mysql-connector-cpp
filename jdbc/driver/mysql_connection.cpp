@@ -97,6 +97,7 @@
 
 
 bool oci_plugin_is_loaded = false;
+bool openid_plugin_is_loaded = false;
 
 
 #ifdef DEFAULT_PLUGIN_DIR
@@ -1313,7 +1314,25 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
             OPT_AUTHENTICATION_KERBEROS_CLIENT_MODE);
       }
 #endif  // defined(_WIN32)
+    } else if (!it->first.compare(OPT_OPENID_TOKEN_FILE)) {
+      try {
+        p_s= (it->second).get<sql::SQLString>();
+      } catch (sql::InvalidArgumentException&) {
+        throw sql::InvalidArgumentException("Wrong type passed for OPT_OPENID_TOKEN_FILE. Expected sql::SQLString.");
+      }
 
+      try {
+        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+                                "authentication_openid_connect_client",
+                                "id-token-file",
+                                *p_s);
+        openid_plugin_is_loaded = true;
+      }  catch (sql::InvalidArgumentException &e) {
+        throw ::sql::SQLUnsupportedOptionException(
+          "Failed to set token file for authentication_openid_connect_client plugin",
+          OPT_OPENID_TOKEN_FILE
+        );
+      }
     } else if (!it->first.compare(OPT_PLUGIN_DIR)) {
       // Nothing to do here: this option was handeld before the loop
 
@@ -1366,6 +1385,21 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
       }
     }
 
+  }
+
+  if (openid_plugin_is_loaded) {
+    if (properties.find(OPT_OPENID_TOKEN_FILE) == properties.end()) {
+      // If OpenID plugin is loaded, but OPT_OPENID_TOKEN_FILE is not explicitly set
+      // the option value needs resetting.
+      try {
+        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+                             "authentication_openid_connect_client",
+                             "id-token-file",
+                             nullptr);
+      } catch (sql::InvalidArgumentException &) {
+        // Do nothing, the exception is expected.
+      }
+    }
   }
 
 #undef PROCESS_CONNSTR_OPTION

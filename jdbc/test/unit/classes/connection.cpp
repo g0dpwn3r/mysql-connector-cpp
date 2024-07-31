@@ -43,6 +43,7 @@
 #include <list>
 #include <memory>
 #include <thread>
+#include <filesystem>
 
 #ifdef _WIN32
 #pragma warning (disable : 4996)
@@ -4308,6 +4309,132 @@ void connection::macro_version()
   ASSERT_EQUALS(version_orig.str(), version_old.str());
 
 #endif
+}
+
+void connection::openid_token()
+{
+  try {
+    stmt->execute("UNINSTALL PLUGIN authentication_openid_connect");
+  }  catch (...) {}
+
+  bool plugin_installed = false;
+
+  // Try every known shared lib extension. If any of them succeeds
+  // we can go with the test.
+  for (sql::SQLString extension : { ".so", ".dylib", ".sl", ".dll", "" }) {
+    try {
+      stmt->execute("INSTALL PLUGIN authentication_openid_connect "
+        "SONAME 'authentication_openid_connect" + extension + "'");
+
+      // Plugin is installed if the execution reached these lines.
+      // So, the loop can be exited.
+      plugin_installed = true;
+      break;
+    }  catch (...) { }
+  }
+
+  if (!plugin_installed)
+      SKIP("Server doesn't support auth test plugin authentication_openid_connect");
+
+  std::cout << "Plugin installed\n";
+
+  #define L1Q "\""
+  #define L2Q "\\\""
+  #define L3Q "\\\\\\\""
+
+  stmt->execute("SET GLOBAL authentication_openid_connect_configuration = "
+    L1Q "JSON://{"
+      L2Q "myissuer" L2Q ":" L2Q "{"
+        L3Q "kid"  L3Q ":" L3Q "b50071d7-e2f0-4e5e-9ae8-c71ac21d16bd" L3Q ","
+        L3Q "kty"  L3Q ":" L3Q "RSA" L3Q ","
+        L3Q "alg"  L3Q ":" L3Q "RS256" L3Q ","
+        L3Q "use"  L3Q ":" L3Q "sig" L3Q ","
+        L3Q "e"    L3Q ":" L3Q "AQAB" L3Q ","
+        L3Q "name" L3Q ":" L3Q "https://myissuer.com" L3Q ","
+        L3Q "n"    L3Q ":" L3Q "09bia-SkqQHWNDZzYoHQtOLUDESzzsjU0rqnyen9o9LG"
+          "DNLGFCFiz0XDOTQhu5ZL7XcHB_IEY9kFdewIC7Kcm8pDJOp7hkXMOeopNP3SlH_lg"
+          "nVSjf6OSWdtAdeL4oW_8zryGoCCy2IksNY53lOF_zDg3DH1qSvCl1VXK50MIwe0BW"
+          "jT71VX_tkK_iXPzMxEPXol8hKU5djWfxGRjaKDqsffDt_UJudOHIH_O81oMpT82UQ"
+          "SOzmZBCwcf6jemLAWKDDo6mBxwXAHp8is_mvbisuU9QgKKjsG6FXmIQaj-jXR4IHg"
+          "lhV-aN_jqi8Y9ab0EANpDqAqbwdBQeL9BTp9fsW32gOTY_a7_gLOwZpCIBkalrGW9"
+          "E6zA0pBiypSuA0Ag5lB8dddRE486zsxxFYIBpDhMzK_CQ9Kq-3B44yJOheBdRRHYo"
+          "EXWfuXTKIbzDoctVw_TBBD3Qh3cV5FSs9lTUAU_eFhbYdoTR9FyTXHMDCo8Axxc66"
+          "IU6EdyUk6xLV9PtyCVWGoM_mFBvEwf7-btJYo73Xqw74T3eVZeTdLAHPHTojMybc5"
+          "OYt_UhpwDlI2lDGUAEEWsn5_XBhJeXc_GEGdEOowieWdwcRYgNFERkvH6-XSbZ0ii"
+          "Zxyi_Ri4DrYK1pm-WDxrFB-RuG1evcLG7rmacIDo1LPApMtpnHkYxc" L3Q
+      "}" L2Q
+    "}" L1Q ";"
+  );
+
+  std::cout << "Server configured\n";
+
+  stmt->execute("DROP USER IF EXISTS 'MySQLUser'@'%'");
+
+  stmt->execute("CREATE USER 'MySQLUser'@'%' IDENTIFIED WITH "
+    "'authentication_openid_connect' AS "
+    "'{\"identity_provider\" : \"myissuer\", \"user\" : \"mysubj\"}'");
+
+  std::cout << "User created\n";
+
+  sql::SQLString cur_path = std::filesystem::current_path().string() +
+    std::string(1, std::filesystem::path::preferred_separator);
+
+  // If token parameter is not specified it will be given via map
+  // as a non-path (non-string parameter)
+  auto connect_func = [&cur_path, this](sql::SQLString *token, bool is_ok,
+    sql::ConnectOptionsMap map = {})
+  {
+    sql::ConnectOptionsMap opts = map;
+    opts[OPT_USERNAME] = "MySQLUser";
+    opts["hostName"] = url;
+    
+    if (getenv("PLUGIN_DIR"))
+      opts[OPT_PLUGIN_DIR] = getenv("PLUGIN_DIR");
+
+
+    if (token)
+    {
+      if (token->length()) {
+        opts[OPT_OPENID_TOKEN_FILE] = cur_path + *token;
+        std::cout << "Using token " << *token << std::endl;
+      } else {
+        std::cout << "Token not given" << std::endl;
+      }
+    } else {
+      std::cout << "Using token which is not a path" << std::endl;
+    }
+
+    try{
+      Connection con(driver->connect(opts));
+      if (!is_ok)
+        FAIL("Connection was expected to fail");
+    } catch(sql::SQLException &e) {
+      if (is_ok)
+        throw e;
+    }
+  };
+
+  sql::SQLString correct_token = "openid_token_correct.txt";
+
+  // OK with correct token
+  connect_func(&correct_token, true);
+
+  // FAIL with correct token, but disabled SSL
+  connect_func(&correct_token, false,
+    {{OPT_SSL_MODE , sql::SSL_MODE_DISABLED}});
+
+  // FAIL with token not being a path
+  connect_func(nullptr, false,
+    {{OPT_OPENID_TOKEN_FILE, 100}});
+
+  // FAIL with all token values
+  for (sql::SQLString t : { "", "non_existing", "openid_token_empty.txt",
+                  "openid_token_invalid.txt", "openid_token_user2.txt",
+                  "openid_token_key2.txt", "openid_token_issuer2.txt",
+                  "openid_token_expired.txt"}) {
+    connect_func(&t, false);
+  }
+
 }
 
 } /* namespace connection */
