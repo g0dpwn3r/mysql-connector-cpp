@@ -57,6 +57,9 @@
 
 %global source_date_epoch_from_changelog 0
 
+%global lib_base_name  libmysqlcppconnx@ABI_VERSION_MAJOR@
+%global lib_base_name_jdbc libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@
+
 ###############################################
 # Package specifications
 ###############################################
@@ -90,8 +93,9 @@ A C++ interface for communicating with MySQL servers.
 
 %package        jdbc
 Summary:        MySQL Driver for C++ which mimics the JDBC 4.0 API
-Provides:       libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@ = %{version}-%{release}
-Obsoletes:      libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@ < %{version}-%{release}
+Provides:       %{lib_base_name_jdbc} = %{version}-%{release}
+Suggests:       krb5-libs, cyrus-sasl-lib, libfido2
+Obsoletes:      %{lib_base_name_jdbc} < %{version}-%{release}
 Obsoletes:      mysql-connector-c++%{?product_suffix}-jdbc < %{version}-%{release}
 Obsoletes:      mysql-connector-c++-jdbc < %{version}-%{release}
 %description    jdbc
@@ -121,6 +125,8 @@ to develop MySQL client applications in C++.
 SRC=`pwd`
 cd ${RPM_BUILD_DIR}
 
+%global plugin_dir %{_libdir}/mysql/%{lib_base_name_jdbc}/plugin
+
 %{?gcc_toolset:source /opt/rh/%{gcc_toolset}/enable}
 
 %if 0%{?with_tests:1} && 0%{?with_gtest:1}
@@ -133,7 +139,7 @@ cd ${RPM_BUILD_DIR}
 # Note: use relative paths for CMAKE_INSTALL_XXX options
 
 %global __cmake_cmd cmake%{?el6:3}%{?el7:3}
-%global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCMAKE_INSTALL_LIBDIR=.%{_libdir} -DCMAKE_INSTALL_INCLUDEDIR=.%{_includedir}/mysql-cppconn -DWITH_SSL=system -DWITH_JDBC=1 -DMYSQLCLIENT_STATIC_LINKING=1 %{?mysql_opt} %{__cmake_test_opts} -DDEBUG_PREFIX_MAP=OFF
+%global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCMAKE_INSTALL_LIBDIR=.%{_libdir} -DCMAKE_INSTALL_INCLUDEDIR=.%{_includedir}/mysql-cppconn -DWITH_SSL=system -DDEFAULT_PLUGIN_DIR=%{plugin_dir} -DWITH_JDBC=1 -DMYSQLCLIENT_STATIC_LINKING=1 -DBUNDLE_DEPENDENCIES=1 %{?mysql_opt} %{__cmake_test_opts} -DDEBUG_PREFIX_MAP=OFF
 %global __cmake_config %{__cmake_cmd} %{__cmake_common_opts} %{__cmake_explicit_opts}
 
 rm -rf build-static && mkdir build-static
@@ -165,6 +171,11 @@ mkdir -p %{buildroot}%{_libdir}/cmake/mysql-concpp/
 install -D -m 0644 %{buildroot}/*.cmake %{buildroot}%{_libdir}/cmake/mysql-concpp/
 rm %{buildroot}/*.cmake
 
+# Bundled plugins
+mkdir -p %{buildroot}%{plugin_dir}
+mv -v %{buildroot}%{_libdir}/plugin/*  %{buildroot}%{plugin_dir}
+rm -rf %{buildroot}%{_libdir}/{plugin,private}
+
 
 %post -p /sbin/ldconfig
 
@@ -193,6 +204,7 @@ rm %{buildroot}/*.cmake
 %doc LICENSE.txt
 %doc README.txt ../build-dynamic/INFO_SRC ../build-dynamic/INFO_BIN
 %{_libdir}/libmysqlcppconn.so.@JDBC_ABI_VERSION_MAJOR@*
+%{plugin_dir}
 
 %files devel
 %doc LICENSE.txt
@@ -212,6 +224,9 @@ rm %{buildroot}/*.cmake
 ###############################################
 
 %changelog
+
+* Fri Aug 09 2024 Rafal Somla <rafal.somla@oracle.com> - 9.1.0-1
+- Bundle authentication plugins in the -jdbc package (WL#16458)
 
 * Thu Jul 11 2024 Rafal Somla <rafal.somla@oracle.com> - 9.1.0-1
 - Fixed provides/obsoletes information

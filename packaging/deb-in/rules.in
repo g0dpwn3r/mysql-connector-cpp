@@ -31,6 +31,7 @@ export CFLAGS=
 export CXXFLAGS=
 
 export LIB_DIR = /usr/lib/$(DEB_HOST_MULTIARCH)
+export PLUGIN_DIR = $(LIB_DIR)/mysql/libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@/plugin
 
 export CMAKE_OPTS= \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -39,7 +40,9 @@ export CMAKE_OPTS= \
 		-DINSTALL_DOC_DIR=./usr \
 		-DWITH_JDBC=ON \
 		-DMYSQLCLIENT_STATIC_LINKING=ON \
+		-DDEFAULT_PLUGIN_DIR=$(PLUGIN_DIR) \
 		-DWITH_SSL=system \
+		-DBUNDLE_DEPENDENCIES=ON \
 		@DEB_CMAKE_EXTRAS@
 
 override_dh_auto_configure:
@@ -84,7 +87,13 @@ override_dh_auto_install:
 	rm debian/tmp/mysql-concpp-config.cmake
 	rm debian/tmp/mysql-concpp-config-version.cmake
 
-	touch $@
+	install -d -m 0755 debian/tmp/.$(PLUGIN_DIR)
+	mv -v debian/tmp/.$(LIB_DIR)/plugin/* debian/tmp/.$(PLUGIN_DIR)/
+	# Note: Remove custom RPATH in plugins -- we want them to use OS-wide dependencies
+	chrpath --delete debian/tmp/.$(PLUGIN_DIR)/*
+	rm -rf debian/tmp/.$(LIB_DIR)/plugin
+	rm -rf debian/tmp/.$(LIB_DIR)/private
+	# touch $@
 
 override_dh_installinit:
 	@echo "RULES.$@"
@@ -92,3 +101,9 @@ override_dh_installinit:
 
 override_dh_install:
 	dh_install --fail-missing
+
+
+# Note: Exclude plugins from calculating package dependencies
+
+override_dh_shlibdeps:
+	dh_shlibdeps -Xmysql_native_password -Xauthentication_

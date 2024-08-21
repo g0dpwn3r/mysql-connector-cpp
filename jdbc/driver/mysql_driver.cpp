@@ -271,6 +271,19 @@ BOOL WINAPI DllMain(
   GetModuleFileNameA(hmodule, _driver_dll_path, sizeof(_driver_dll_path));
   driver_dll_path = _driver_dll_path;
   driver_dll_path = driver_dll_path.substr(0, driver_dll_path.find_last_of('\\') + 1);
+
+  /*
+    Note: For DLL in Windows we will try to set the plugin directory
+    based on driver_dll_path.
+  */
+
+  default_plugin_dir = driver_dll_path;
+#ifdef _DEBUG
+  // Debug dll is placed inside debug subdirectory
+  default_plugin_dir.append("..\\");
+#endif
+  default_plugin_dir.append("plugin");
+
   return true;
 }
 #endif

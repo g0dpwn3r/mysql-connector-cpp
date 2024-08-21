@@ -4,7 +4,7 @@ Section: database
 Priority: optional
 Standards-Version: 3.9.8
 Homepage: https://dev.mysql.com/doc/connector-cpp/en/
-Build-Depends: cmake, debhelper (>= 10), libboost-dev, libmysqlclient-dev, libssl-dev
+Build-Depends: cmake, debhelper (>= 10), libboost-dev, libmysqlclient-dev, libssl-dev, chrpath
 
 Package: libmysqlcppconnx@ABI_VERSION_MAJOR@
 Architecture: any
@@ -22,7 +22,7 @@ Section: libs
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}
-@JDBC_RECOMMENDS_AND_SUGGESTS@
+Suggests: libkrb5-3, libsasl2-2, libgssapi-krb5-2, libfido2-1, libssl3
 Description: MySQL Driver for C++ which mimics the JDBC 4.0 API
  This MySQL Driver for C++ mimics the JDBC 4.0 API.
 

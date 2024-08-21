@@ -39,6 +39,7 @@
 #if(_WIN32 && CONCPP_BUILD_SHARED)
 extern std::string driver_dll_path;
 #endif
+extern std::string default_plugin_dir;
 
 namespace sql
 {

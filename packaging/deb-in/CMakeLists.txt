@@ -100,14 +100,12 @@ IF (DEB_PRODUCT STREQUAL "commercial")
   SET (DEB_LICENSENAME "Commercial")
   SET (DEB_VERSION "+commercial-1")
   SET (DEB_SERVERPRODUCT "commercial")
-  SET (JDBC_RECOMMENDS_AND_SUGGESTS "Recommends: mysql-commercial-client-plugins")
 ELSE()
   SET (DEB_COPYRIGHT_UPSTREAMNAME "MySQL ${MYSQL_BASE_VERSION}")
   SET (DEB_PRODUCTNAME "")
   SET (DEB_LICENSENAME "GPL")
   SET (DEB_VERSION "-1")
   SET (DEB_SERVERPRODUCT "community")
-  SET (JDBC_RECOMMENDS_AND_SUGGESTS "Suggests: mysql-community-client-plugins")
 ENDIF()
 
 # All files are configured and copied to the debian/ directory, which is used
@@ -148,4 +146,3 @@ endforeach()
 EXECUTE_PROCESS(
   COMMAND chmod +x ${CMAKE_BINARY_DIR}/debian/rules
 )
-

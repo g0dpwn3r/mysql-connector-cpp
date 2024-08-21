@@ -99,6 +99,13 @@
 bool oci_plugin_is_loaded = false;
 
 
+#ifdef DEFAULT_PLUGIN_DIR
+std::string default_plugin_dir(DEFAULT_PLUGIN_DIR);
+#else
+std::string default_plugin_dir;
+#endif
+
+
 namespace sql
 {
 namespace mysql
@@ -783,21 +790,10 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
         throw sql::InvalidArgumentException("Wrong type passed for pluginDir expected sql::SQLString");
       }
     }
-#if(_WIN32 && CONCPP_BUILD_SHARED)
-    else {
-      /*
-        Note: For DLL in Windows we will try to set the plugin directory
-        based on driver_dll_path.
-      */
-      plugin_dir = driver_dll_path;
-#ifdef _DEBUG
-      // Debug dll is placed inside debug subdirectory
-      plugin_dir.append("..\\");
-#endif
-      plugin_dir.append("plugin");
+    else if(!default_plugin_dir.empty()) {
+      plugin_dir = default_plugin_dir;
       p_s = &plugin_dir;
     }
-#endif
 
     if (p_s) {
       proxy->options(sql::mysql::MYSQL_PLUGIN_DIR, *p_s);
