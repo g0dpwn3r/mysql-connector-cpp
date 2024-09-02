@@ -429,6 +429,7 @@ endif()
 set(AUTH_PLUGINS
   ldap_sasl
   oci
+  openid_connect
 )
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
