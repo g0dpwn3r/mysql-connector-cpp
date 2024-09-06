@@ -48,6 +48,9 @@
 
 %{?el8:%global gcc_toolset gcc-toolset-13}
 %{?el9:%global gcc_toolset gcc-toolset-13}
+
+%global cmake_cmd   cmake%{?el6:3}%{?el7:3}
+
 %if 0%{?suse_version} == 1315
 %global dist            .sles12
 %endif
@@ -78,7 +81,7 @@ Source0:        https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connecto
 Provides: libmysqlcppconn8.so.2()(%{?__isa_bits}bit) = %{version}-%{release}
 Obsoletes:      mysql-connector-c++%{?product_suffix} < %{version}-%{release}
 Obsoletes:      mysql-connector-c++ < %{version}-%{release}
-BuildRequires:  cmake%{?el6:3}%{?el7:3}
+BuildRequires:  %{cmake_cmd} >= 3.15.0
 %if 0%{?fedora} || 0%{?suse_version}
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
@@ -138,17 +141,16 @@ cd ${RPM_BUILD_DIR}
 
 # Note: use relative paths for CMAKE_INSTALL_XXX options
 
-%global __cmake_cmd cmake%{?el6:3}%{?el7:3}
 %global __cmake_common_opts -DCMAKE_BUILD_TYPE=RelWithDebInfo  -DCMAKE_INSTALL_LIBDIR=.%{_libdir} -DCMAKE_INSTALL_INCLUDEDIR=.%{_includedir}/mysql-cppconn -DWITH_SSL=system -DDEFAULT_PLUGIN_DIR=%{plugin_dir} -DWITH_JDBC=1 -DMYSQLCLIENT_STATIC_LINKING=1 -DBUNDLE_DEPENDENCIES=1 %{?mysql_opt} %{__cmake_test_opts} -DDEBUG_PREFIX_MAP=OFF
-%global __cmake_config %{__cmake_cmd} %{__cmake_common_opts} %{__cmake_explicit_opts}
+%global __cmake_config %{cmake_cmd} %{__cmake_common_opts} %{__cmake_explicit_opts}
 
 rm -rf build-static && mkdir build-static
 %{__cmake_config} -S ${SRC} -B build-static -DBUILD_STATIC=1
-%{__cmake_cmd} --build build-static --verbose
+%{cmake_cmd} --build build-static --verbose
 
 rm -rf build-dynamic && mkdir build-dynamic
 %{__cmake_config} -S ${SRC} -B build-dynamic -DBUILD_STATIC=0
-%{__cmake_cmd} --build build-dynamic --verbose
+%{cmake_cmd} --build build-dynamic --verbose
 
 
 %install
@@ -157,8 +159,8 @@ cd ${RPM_BUILD_DIR}
 
 # Note: order of installations is important!
 
-%{__cmake_cmd} --install build-static --prefix %{buildroot}
-%{__cmake_cmd} --install build-dynamic --prefix %{buildroot}
+%{cmake_cmd} --install build-static --prefix %{buildroot}
+%{cmake_cmd} --install build-dynamic --prefix %{buildroot}
 
 # Remove unwanted files
 rm %{buildroot}/{INFO_SRC,INFO_BIN}
