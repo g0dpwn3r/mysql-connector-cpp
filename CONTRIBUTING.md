@@ -9,33 +9,31 @@ Before reporting a new bug, please check first to see if a similar bug [exists](
 Bug reports should be as complete as possible.  Please try and include the following:
 
 * complete steps to reproduce the issue
-* any information about platform and environment that could be specific to the bug
+* any information about platform and environment that could be specific to
+  the bug
 * Specific version of the product you are using
 * Specific version of the server being used
 * C++ code to help reproduce the issue if possible
 
+Please do NOT raise a GitHub Issue to report a security vulnerability.
+See SECURITY.md for additional information.
+
 ## Contributing Code
 
-Contributing to this project is easy. You just need to follow these steps.
+You need to follow these steps.
 
-* Sign the Oracle Contributor Agreement. You can find instructions for doing that at [OCA Page](https://oca.opensource.oracle.com/)
+* Make sure you have a user account at bugs.mysql.com. You'll need to reference
+  this user account when you submit your OCA (Oracle Contributor Agreement).
+* Sign the Oracle Contributor Agreement. You can find instructions for doing
+  that at [OCA Page](https://oca.opensource.oracle.com/)
 * Develop your pull request
-  * Make sure you are aware of the requirements for the project (i.e. don't require C++17 if we are supporting C++11 and higher)
-* Validate your pull request by including tests that sufficiently cover the functionality
-* Verify that the entire test suite passes with your code applied
+* Make sure you are aware of the requirements for the project (i.e. don't
+  require C++20 if we are supporting C++17 and higher)
+* Validate your pull request by including tests that sufficiently cover
+  the functionality
 * Submit your pull request
+* It is also possible to upload your changes using the 'contribution' tab to
+  a bug record in https://bugs.mysql.com.
 
-## Running Tests
-
-Any contributed code should pass our unit tests.
-To run the unit tests you need to perform the following steps:
-
-* Build the Connector/C++ with the cmake option enabling unit tests (-DWITH_TESTS=1)
-* Run MySQL Server
-* Set the following environment variables:
-  * XPLUGIN_PORT = <the port number of XPlugin in MySQL Server>
-  * XLPIGIN_USER = <MySQL user name>
-  * XPLUGIN_PASSWORD = <MySQL password>
-* In the OS command line enter the Connector/C++ build directory and run `ctest` utility
-
-At the end of `ctest` run the result should indicate 100% tests passed.
+Only pull requests from committers that can be verified as having signed the OCA
+can be accepted.
