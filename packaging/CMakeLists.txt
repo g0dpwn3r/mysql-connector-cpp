@@ -50,6 +50,41 @@ include(PackageSpecs.cmake)
 
 add_subdirectory(deb-in)
 
+# RPM stuff
+
+find_program(RPM rpm)
+
+if(RPM)
+
+  # Get RPM version
+
+  execute_process(COMMAND ${RPM} "--version"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE RPM_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  if(res)
+    message(FATAL_ERROR "Could not determine RPM version (${RPM} --version command failed)")
+  endif()
+
+  # Set RPM_VER_NUM to version number in XYYZZ format
+
+  string(REGEX REPLACE "^RPM version *" "" RPM_VERSION ${RPM_VERSION})
+  string(REPLACE "." ";" ver ${RPM_VERSION})
+  list(GET ver 0 ver_major)
+  list(GET ver 1 ver_minor)
+  list(GET ver 2 ver_patch)
+  string(REGEX MATCH "..$" ver_minor "0${ver_minor}")
+  string(REGEX MATCH "..$" ver_patch "0${ver_patch}")
+  set(RPM_VER_NUM "${ver_major}${ver_minor}${ver_patch}")
+
+  message(STATUS "Using RPM tools version: ${RPM_VERSION} (${RPM_VER_NUM})")
+
+endif()
+
+
+# Gnerate RPM specification
 
 if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
   set(rpm_spec "${CMAKE_CURRENT_BINARY_DIR}/SPECS/mysql-connector-c++.spec")

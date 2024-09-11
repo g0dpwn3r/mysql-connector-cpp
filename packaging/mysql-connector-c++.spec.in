@@ -63,6 +63,12 @@
 %global lib_base_name  libmysqlcppconnx@ABI_VERSION_MAJOR@
 %global lib_base_name_jdbc libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@
 
+# TODO: use %rpmversion if available, note that it is in the format X.Y.Z.Y
+# and the current logic requires numeric format XYYZZ.
+
+%global rpm_ver_num @RPM_VER_NUM@
+
+
 ###############################################
 # Package specifications
 ###############################################
@@ -97,7 +103,10 @@ A C++ interface for communicating with MySQL servers.
 %package        jdbc
 Summary:        MySQL Driver for C++ which mimics the JDBC 4.0 API
 Provides:       %{lib_base_name_jdbc} = %{version}-%{release}
+# Note: Field `Suggests` is recognized by RPM 4.13 and later
+%if %{rpm_ver_num} >= 41300
 Suggests:       krb5-libs, cyrus-sasl-lib, libfido2
+%endif
 Obsoletes:      %{lib_base_name_jdbc} < %{version}-%{release}
 Obsoletes:      mysql-connector-c++%{?product_suffix}-jdbc < %{version}-%{release}
 Obsoletes:      mysql-connector-c++-jdbc < %{version}-%{release}
