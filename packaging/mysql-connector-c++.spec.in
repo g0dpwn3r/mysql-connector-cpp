@@ -39,17 +39,6 @@
 %{?commercial:   %global license_type Commercial}
 %{?commercial:   %global product_suffix -commercial}
 %{!?commercial:  %global product_suffix %{nil}}
-%{?el6:%global __strip /opt/rh/devtoolset-8/root/usr/bin/strip}
-%{?el6:%global gcc_toolset devtoolset-8}
-
-%ifarch aarch64
-%{?el7:%global gcc_toolset devtoolset-10}
-%else
-%{?el7:%global gcc_toolset devtoolset-11}
-%endif
-
-%{?el8:%global gcc_toolset gcc-toolset-13}
-%{?el9:%global gcc_toolset gcc-toolset-13}
 
 %global cmake_cmd   cmake%{?el6:3}%{?el7:3}
 
@@ -95,12 +84,8 @@ Source1:        https://dev.mysql.com/get/Downloads/Connector-C++/mysql-connecto
 %endif
 
 BuildRequires:  %{cmake_cmd} >= 3.15.0
-%if 0%{?fedora} || 0%{?suse_version}
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
-%endif
-%{?gcc_toolset:BuildRequires: %{gcc_toolset}-gcc}
-%{?gcc_toolset:BuildRequires: %{gcc_toolset}-gcc-c++}
 BuildRequires:  openssl-devel
 
 %description
@@ -173,8 +158,6 @@ SRC1=%{name}-8.4.0-src
 cd ${RPM_BUILD_DIR}
 
 %global plugin_dir %{_libdir}/mysql/%{lib_base_name_jdbc}/plugin
-
-%{?gcc_toolset:source /opt/rh/%{gcc_toolset}/enable}
 
 %if 0%{?with_tests:1} && 0%{?with_gtest:1}
 %global __cmake_test_opts -DWITH_TESTS=1 -DWITH_GTEST=%{with_gtest}
