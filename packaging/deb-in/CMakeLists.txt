@@ -85,6 +85,23 @@ IF(DEB_CODENAME STREQUAL "sid")
   SET (DEB_PLATFORMRELEASE "debianunstable")
 ENDIF()
 
+# Determine multiarch library install location
+
+execute_process(
+  COMMAND dpkg-architecture -q DEB_TARGET_MULTIARCH
+  OUTPUT_VARIABLE DEB_TARGET_MULTIARCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE res
+)
+
+if(res)
+  message(FATAL_ERROR "Failed to execute dpkg-architecture")
+endif()
+
+set(LIB_DIR "/usr/lib/${DEB_TARGET_MULTIARCH}")
+message(STATUS "multiarch lib location: ${LIB_DIR}")
+
+
 #Follow MYSQLCLIENT_STATIC_LINKING option on packaging
 if(DEFINED MYSQLCLIENT_STATIC_LINKING)
   set(DEB_CMAKE_EXTRAS
