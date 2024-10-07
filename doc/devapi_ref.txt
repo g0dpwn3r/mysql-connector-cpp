@@ -20,7 +20,7 @@ To get started, check out some of the main X DevAPI classes:
   the `mysqlx::Collection` or `mysqlx::Table` class, such as
   [`find()`](@ref mysqlx::abi2::r0::Collection::find). They
   are executed with
-  the [`execute()`](@ref mysqlx::abi2::r0::CollectionFind::execute) method.
+  the [`execute()`](@ref mysqlx::abi2::r0::Executable::execute) method.
 
 - Results of a query are examined using `mysqlx::DocResult`
   or `mysqlx::RowResult` instances returned from `execute()` method. Method

@@ -26,6 +26,88 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
+# Note: Version 3.15 is required becausae package build instructions
+# depend on cmake recognizing --install opton.
+
+cmake_minimum_required(VERSION 3.15)
+
+project(MySQL_CONCPP_Packages)
+
+# Note: version.cmake can be already included if this is used as part of
+# the top-level project.
+
+if(NOT DEFINED CONCPP_VERSION)
+  include(${CMAKE_CURRENT_SOURCE_DIR}/../version.cmake)
+endif()
+
+include(PackageSpecs.cmake)
+
+
+# ======================================================================
+# RPM/DEB package specifications
+# ======================================================================
+
+
+add_subdirectory(deb-in)
+
+# RPM stuff
+
+find_program(RPM rpm)
+
+if(RPM)
+
+  # Get RPM version
+
+  execute_process(COMMAND ${RPM} "--version"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE RPM_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  if(res)
+    message(FATAL_ERROR "Could not determine RPM version (${RPM} --version command failed)")
+  endif()
+
+  # Set RPM_VER_NUM to version number in XYYZZ format
+
+  string(REGEX REPLACE "^RPM version *" "" RPM_VERSION ${RPM_VERSION})
+  string(REPLACE "." ";" ver ${RPM_VERSION})
+  list(GET ver 0 ver_major)
+  list(GET ver 1 ver_minor)
+  list(GET ver 2 ver_patch)
+  string(REGEX MATCH "..$" ver_minor "0${ver_minor}")
+  string(REGEX MATCH "..$" ver_patch "0${ver_patch}")
+  set(RPM_VER_NUM "${ver_major}${ver_minor}${ver_patch}")
+
+  message(STATUS "Using RPM tools version: ${RPM_VERSION} (${RPM_VER_NUM})")
+
+endif()
+
+
+# Gnerate RPM specification
+
+if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  set(rpm_spec "${CMAKE_CURRENT_BINARY_DIR}/SPECS/mysql-connector-c++.spec")
+  file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/SOURCES)
+else()
+  # Note: Preserve old behavior when included from the main CMakeLists.txt
+  set(rpm_spec "${CMAKE_CURRENT_BINARY_DIR}/mysql-connector-c++.spec")
+endif()
+
+configure_file(mysql-connector-c++.spec.in "${rpm_spec}" @ONLY)
+
+
+#
+# If building this project stand-alone we stop here after generating RPM/DEB
+# package specifications. Otherwise the rest of the project contains
+# specifications for building packages using CPack (works with TGZ generator).
+#
+
+if(PROJECT_NAME STREQUAL CMAKE_PROJECT_NAME)
+  return()
+endif()
+
+
 # ======================================================================
 # Install manifest
 # ======================================================================
@@ -37,16 +119,20 @@
 
 if(DEFINED INSTALL_MANIFEST)
 
-add_custom_target(generate_manifest
-  ALL
-  COMMAND ${CMAKE_COMMAND}
-    -D MANIFEST_FILE=${INSTALL_MANIFEST}
-    -D BUILD_DIR=${PROJECT_BINARY_DIR}
-    -D CONFIG=$<CONFIG>
-    -P "${CMAKE_CURRENT_SOURCE_DIR}/install_manifest.cmake"
-  WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-  COMMENT "Generating install manifest"
-)
+  if(NOT MySQL_CONCPP_BINARY_DIR)
+    abort("Top-level binary dir unknown...")
+  endif()
+
+  add_custom_target(generate_manifest
+    ALL
+    COMMAND ${CMAKE_COMMAND}
+      -D MANIFEST_FILE=${INSTALL_MANIFEST}
+      -D BUILD_DIR=${MySQL_CONCPP_BINARY_DIR}
+      -D CONFIG=$<CONFIG>
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/install_manifest.cmake"
+    WORKING_DIRECTORY ${MySQL_CONCPP_BINARY_DIR}
+    COMMENT "Generating install manifest"
+  )
 
 endif()
 
@@ -81,13 +167,9 @@ foreach(file ${info_files})
 
 endforeach()
 
-set(CPACK_RESOURCE_FILE_README  "${CMAKE_BINARY_DIR}/README${info_ext}")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_BINARY_DIR}/${LIC_FILE}${info_ext}")
-#set(CPACK_RESOURCE_FILE_INSTALL "...")    # FIXME
-
 
 # ======================================================================
-# Package specifications
+# Package definitions
 # ======================================================================
 
 if(APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -95,12 +177,12 @@ if(APPLE AND NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 
 
-include(PackageSpecs.cmake)  # Note: must be included before CPack
-
-CONFIGURE_FILE(mysql-connector-c++.spec.in ${CMAKE_CURRENT_BINARY_DIR}/mysql-connector-c++.spec @ONLY)
-ADD_SUBDIRECTORY(deb-in)
-
 include(CPack)
+
+set(CPACK_RESOURCE_FILE_README  "${CMAKE_BINARY_DIR}/README${info_ext}")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_BINARY_DIR}/${LIC_FILE}${info_ext}")
+#set(CPACK_RESOURCE_FILE_INSTALL "...")    # FIXME
+
 
 # Define install component groups.
 

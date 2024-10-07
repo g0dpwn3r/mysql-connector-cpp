@@ -23,6 +23,9 @@
 
 usr/lib/*/libmysqlcppconn.so.@JDBC_ABI_VERSION_MAJOR@*
 
+# Plugins
+usr/lib/*/mysql/libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@/plugin/
+
 # Build info
 /usr/INFO_SRC /usr/share/doc/@PACKAGE_BASE_NAME@
 /usr/INFO_BIN /usr/share/doc/@PACKAGE_BASE_NAME@

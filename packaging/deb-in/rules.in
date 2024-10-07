@@ -30,65 +30,70 @@ export DH_VERBOSE=1
 export CFLAGS=
 export CXXFLAGS=
 
+export LIB_DIR = @LIB_DIR@
+export PLUGIN_DIR = $(LIB_DIR)/mysql/libmysqlcppconn@JDBC_ABI_VERSION_MAJOR@/plugin
+
+export CMAKE_OPTS= \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+		-DINSTALL_LIB_DIR=.$(LIB_DIR) \
+		-DINSTALL_INCLUDE_DIR=./usr/include \
+		-DINSTALL_DOC_DIR=./usr \
+		-DWITH_JDBC=ON \
+		-DMYSQLCLIENT_STATIC_LINKING=ON \
+		-DDEFAULT_PLUGIN_DIR=$(PLUGIN_DIR) \
+		-DWITH_SSL=system \
+		-DBUNDLE_DEPENDENCIES=ON \
+		@DEB_CMAKE_EXTRAS@
+
 override_dh_auto_configure:
 	@echo "RULES.$@"
+	@echo "cmake options: $(CMAKE_OPTS)"
 
-	mkdir release && cd release && \
-	cmake .. \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DINSTALL_LIB_DIR=lib/$(DEB_HOST_MULTIARCH) \
-		-DWITH_JDBC=ON \
-		-DWITH_SSL=system \
-		@DEB_CMAKE_EXTRAS@
+	rm -rf release && mkdir -p release
+	cmake -Brelease -S. $(CMAKE_OPTS)
 
-	mkdir static && cd static && \
-	cmake .. \
-		-DBUILD_STATIC=ON \
-		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DINSTALL_LIB_DIR_STATIC=lib/$(DEB_HOST_MULTIARCH) \
-		-DWITH_JDBC=ON \
-		-DWITH_SSL=system \
-		@DEB_CMAKE_EXTRAS@
+	rm -rf static && mkdir -p static
+	cmake -Bstatic -S. $(CMAKE_OPTS) -DBUILD_STATIC=ON
 
-	touch $@
+	# touch $@
+
 
 override_dh_auto_build:
 	@echo "RULES.$@"
-	@DEB_RULES_DEBUG_MAKE@
-	cd release && \
-	$(MAKE) -j8 VERBOSE=1
-	cd static && \
-	$(MAKE) -j8 VERBOSE=1
-	touch $@
+	cmake --build release --verbose
+	cmake --build static --verbose
+	# touch $@
 
+
+# Note: Disable testing
 override_dh_auto_test:
-	@echo "RULES.$@"
-	export CTEST_OUTPUT_ON_FAILURE=1
-	cd release && \
-	make test || true
-	touch $@
 
 @DEB_RULES_STRIP@
 
 override_dh_auto_install:
-
 	@echo "RULES.$@"
+
 	# complete install first
-	cd release && \
-	$(MAKE) install DESTDIR=../debian/tmp
-	cd static && \
-	$(MAKE) install DESTDIR=../debian/tmp
+	cmake --install static --prefix ./debian/tmp
+	cmake --install release --prefix ./debian/tmp
+
 	install README.txt debian/tmp/usr/README.txt
 	install LICENSE.txt debian/tmp/usr/LICENSE.txt
-	install -d -m 0755 debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/cmake
-	install -d -m 0755 debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/cmake/mysql-concpp
-	install debian/tmp/usr/mysql-concpp-config.cmake debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/cmake/mysql-concpp/mysql-concpp-config.cmake
-	install debian/tmp/usr/mysql-concpp-config-version.cmake debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/cmake/mysql-concpp/mysql-concpp-config-version.cmake
-	rm debian/tmp/usr/mysql-concpp-config.cmake
-	rm debian/tmp/usr/mysql-concpp-config-version.cmake
-	touch $@
+
+	install -d -m 0755 debian/tmp/.$(LIB_DIR)/cmake
+	install -d -m 0755 debian/tmp/.$(LIB_DIR)/cmake/mysql-concpp
+	install debian/tmp/mysql-concpp-config.cmake debian/tmp/.$(LIB_DIR)/cmake/mysql-concpp/mysql-concpp-config.cmake
+	install debian/tmp/mysql-concpp-config-version.cmake debian/tmp/.$(LIB_DIR)/cmake/mysql-concpp/mysql-concpp-config-version.cmake
+	rm debian/tmp/mysql-concpp-config.cmake
+	rm debian/tmp/mysql-concpp-config-version.cmake
+
+	install -d -m 0755 debian/tmp/.$(PLUGIN_DIR)
+	mv -v debian/tmp/.$(LIB_DIR)/plugin/* debian/tmp/.$(PLUGIN_DIR)/
+	# Note: Remove custom RPATH in plugins -- we want them to use OS-wide dependencies
+	chrpath --delete debian/tmp/.$(PLUGIN_DIR)/*
+	rm -rf debian/tmp/.$(LIB_DIR)/plugin
+	rm -rf debian/tmp/.$(LIB_DIR)/private
+	# touch $@
 
 override_dh_installinit:
 	@echo "RULES.$@"
@@ -96,3 +101,9 @@ override_dh_installinit:
 
 override_dh_install:
 	dh_install --fail-missing
+
+
+# Note: Exclude plugins from calculating package dependencies
+
+override_dh_shlibdeps:
+	dh_shlibdeps -Xmysql_native_password -Xauthentication_

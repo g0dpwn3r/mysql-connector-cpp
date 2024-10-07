@@ -26,9 +26,18 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
-IF(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  RETURN()
-ENDIF()
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  message("Skipping DEB package configuration: not a Linux system")
+  return()
+endif()
+
+find_program(LSB_RELEASE lsb_release)
+if(NOT LSB_RELEASE)
+  message("Skipping DEB package configuration: lsb_release was not found")
+  return()
+endif()
+
+
 IF (NOT DEFINED DEB_CODENAME)
   execute_process(
     COMMAND lsb_release -cs
@@ -76,8 +85,29 @@ IF(DEB_CODENAME STREQUAL "sid")
   SET (DEB_PLATFORMRELEASE "debianunstable")
 ENDIF()
 
+# Determine multiarch library install location
+
+execute_process(
+  COMMAND dpkg-architecture -q DEB_TARGET_MULTIARCH
+  OUTPUT_VARIABLE DEB_TARGET_MULTIARCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  RESULT_VARIABLE res
+)
+
+if(res)
+  message(FATAL_ERROR "Failed to execute dpkg-architecture")
+endif()
+
+set(LIB_DIR "/usr/lib/${DEB_TARGET_MULTIARCH}")
+message(STATUS "multiarch lib location: ${LIB_DIR}")
+
+
 #Follow MYSQLCLIENT_STATIC_LINKING option on packaging
-SET (DEB_CMAKE_EXTRAS "${DEB_CMAKE_EXTRAS} -DMYSQLCLIENT_STATIC_LINKING=${MYSQLCLIENT_STATIC_LINKING}")
+if(DEFINED MYSQLCLIENT_STATIC_LINKING)
+  set(DEB_CMAKE_EXTRAS
+    "${DEB_CMAKE_EXTRAS} -DMYSQLCLIENT_STATIC_LINKING=${MYSQLCLIENT_STATIC_LINKING}"
+  )
+endif()
 
 # Timestamp for use in debian/changelog
 IF (NOT DEFINED DEB_CHANGELOG_TIMESTAMP)
@@ -96,19 +126,18 @@ IF (DEB_PRODUCT STREQUAL "commercial")
   SET (DEB_LICENSENAME "Commercial")
   SET (DEB_VERSION "+commercial-1")
   SET (DEB_SERVERPRODUCT "commercial")
-  SET (JDBC_RECOMMENDS_AND_SUGGESTS "Recommends: mysql-commercial-client-plugins")
 ELSE()
   SET (DEB_COPYRIGHT_UPSTREAMNAME "MySQL ${MYSQL_BASE_VERSION}")
   SET (DEB_PRODUCTNAME "")
   SET (DEB_LICENSENAME "GPL")
   SET (DEB_VERSION "-1")
   SET (DEB_SERVERPRODUCT "community")
-  SET (JDBC_RECOMMENDS_AND_SUGGESTS "Suggests: mysql-community-client-plugins")
 ENDIF()
 
 # All files are configured and copied to the debian/ directory, which is used
 # by debuild to make the packages
-SET (DEB_ROOT ${CMAKE_SOURCE_DIR}/packaging/deb-in)
+
+SET (DEB_ROOT ${CMAKE_CURRENT_SOURCE_DIR})
 FILE(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/debian)
 
 foreach(CF changelog control rules compat copyright)
@@ -143,4 +172,3 @@ endforeach()
 EXECUTE_PROCESS(
   COMMAND chmod +x ${CMAKE_BINARY_DIR}/debian/rules
 )
-

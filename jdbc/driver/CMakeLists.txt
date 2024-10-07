@@ -193,6 +193,11 @@ IF(WIN32)
 ENDIF(WIN32)
 
 
+if(DEFINED DEFAULT_PLUGIN_DIR)
+  add_compile_definitions(DEFAULT_PLUGIN_DIR="${DEFAULT_PLUGIN_DIR}")
+endif()
+
+
 #-----------------
 
 add_library(jdbc STATIC ${MYSQLCPPCONN_SOURCES})

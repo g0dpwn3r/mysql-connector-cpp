@@ -62,6 +62,7 @@ public:
 *   TODO: enable it when DNS+SRV works in docker
     TEST_CASE(checkDnsSrv);
     */
+    TEST_CASE(openid_token);
     TEST_CASE(getClientInfo);
     TEST_CASE(getClientOption);
     TEST_CASE(getSessionVariable);
@@ -103,7 +104,6 @@ public:
   TEST_CASE(webauthn_test);
   TEST_CASE(normalize_ssl_options);
   TEST_CASE(macro_version);
-
   }
 
   /**
@@ -330,6 +330,12 @@ public:
    *
    */
   void macro_version();
+
+  /*
+   * Test OPT_OPENID_TOKEN_FILE option.
+   *
+   */
+  void openid_token();
 };
 
 REGISTER_FIXTURE(connection);

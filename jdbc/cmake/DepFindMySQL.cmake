@@ -492,15 +492,18 @@ function(use_mysql_config)
 
   _mysql_conf(MYSQL_INCLUDE_DIR --variable=pkgincludedir)
   _mysql_conf(MYSQL_LIB_DIR     --variable=pkglibdir)
-  _mysql_conf(MYSQL_PLUGIN_DIR     --variable=plugindir)
 
   file(TO_CMAKE_PATH "${MYSQL_INCLUDE_DIR}" MYSQL_INCLUDE_DIR)
   file(TO_CMAKE_PATH "${MYSQL_LIB_DIR}" MYSQL_LIB_DIR)
-  file(TO_CMAKE_PATH "${MYSQL_PLUGIN_DIR}" MYSQL_PLUGIN_DIR)
 
   set(MYSQL_INCLUDE_DIR "${MYSQL_INCLUDE_DIR}" PARENT_SCOPE)
   set(MYSQL_LIB_DIR "${MYSQL_LIB_DIR}" PARENT_SCOPE)
-  set(MYSQL_PLUGIN_DIR "${MYSQL_PLUGIN_DIR}" PARENT_SCOPE)
+
+  if(NOT MYSQL_PLUGIN_DIR)
+    _mysql_conf(MYSQL_PLUGIN_DIR --variable=plugindir)
+    file(TO_CMAKE_PATH "${MYSQL_PLUGIN_DIR}" MYSQL_PLUGIN_DIR)
+    set(MYSQL_PLUGIN_DIR "${MYSQL_PLUGIN_DIR}" PARENT_SCOPE)
+  endif()
 
   # client library version (note: it will be cleaned up in get_version())
 
