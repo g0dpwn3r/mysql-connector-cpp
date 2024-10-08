@@ -221,7 +221,7 @@ foreach (token
 
   # Install tokens
   install(
-    FILES ${token}
+    FILES tokens/${token}
     DESTINATION tests/jdbc
     COMPONENT JDBCTests
     EXCLUDE_FROM_ALL
