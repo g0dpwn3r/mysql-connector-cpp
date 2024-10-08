@@ -26,12 +26,13 @@
 # along with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 
+list(APPEND MY_TARGET_LINK_LIBRARIES test_framework)
+
 IF(WIN32)
   if(MSBUILD)
     LINK_DIRECTORIES(${MYSQL_DIR}/lib/$(ConfigurationName))
     LINK_DIRECTORIES(../framework/$(ConfigurationName))
   endif()
-  SET(MY_TARGET_LINK_LIBRARIES connector-jdbc test_framework)
   SET(MY_TARGET_LINK_LIBRARIES_STATIC_CPPLIB connector-jdbc-static test_framework)
 #	ADD_DEFINITIONS("-D_SECURE_SCL")
   ADD_DEFINITIONS("-D_SCL_SECURE_NO_WARNINGS")
@@ -64,7 +65,6 @@ IF(WIN32)
   )
 
 ELSEIF(NOT WIN32)
-  SET(MY_TARGET_LINK_LIBRARIES connector-jdbc test_framework)
   FIND_LIBRARY(MYSQLCPPCONN_DYNLOAD_MYSQL_LIB
     NAMES
     libmysqlclient_r.so
@@ -95,9 +95,6 @@ ELSEIF(NOT WIN32)
   )
 ENDIF(WIN32)
 
-if(NOT MYSQLCLIENT_STATIC_LINKING)
-  list(APPEND MY_TARGET_LINK_LIBRARIES MySQL::client)
-endif()
 
 IF(CMAKE_COMPILER_IS_GNUCC AND MYSQLCPPCONN_GCOV_ENABLE)
   SET(MY_GCOV_LINK_LIBRARIES gcov)

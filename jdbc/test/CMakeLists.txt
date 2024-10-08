@@ -41,6 +41,20 @@ INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include")
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include/jdbc")
 INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include/jdbc/cppconn")
 
+set(MY_TARGET_LINK_LIBRARIES connector-jdbc)
+
+
+if(DEFINED GCC AND GCC VERSION_LESS 9)
+
+  # Note: Some unit tests use std::filesystem part of the standard library
+  # Before version 9 of gcc that requires linking with the additional library
+
+  list(APPEND MY_TARGET_LINK_LIBRARIES -lstdc++fs)
+  # message(STATUS "Added libstdc++fs for GCC version ${GCC}: ${MY_TARGET_LINK_LIBRARIES}")
+
+endif()
+
+
 IF(MSBUILD)
   IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
     LINK_DIRECTORIES(${MYSQL_DIR}/lib/debug)
@@ -50,10 +64,6 @@ IF(MSBUILD)
 
   ADD_DEFINITIONS("-D_SCL_SECURE_NO_WARNINGS")
   ADD_DEFINITIONS("-D_CRT_SECURE_NO_WARNINGS")
-
-  SET(MY_TARGET_LINK_LIBRARIES connector-jdbc)
-ELSEIF(NOT MSBUILD)
-  SET(MY_TARGET_LINK_LIBRARIES connector-jdbc)
 ENDIF()
 
 if(NOT MYSQLCLIENT_STATIC_LINKING)
