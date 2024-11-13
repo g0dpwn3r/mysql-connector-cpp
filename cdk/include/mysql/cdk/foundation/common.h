@@ -42,7 +42,7 @@
 #define DIAGNOSTIC_PUSH_CDK  PRAGMA_CDK(warning (push))
 #define DIAGNOSTIC_POP_CDK   PRAGMA_CDK(warning (pop))
 
-#elif defined __GNUC__ || defined __clang__ 
+#elif defined __GNUC__ || defined __clang__
 
 #define PRAGMA_CDK(X) _Pragma(#X)
 #define DISABLE_WARNING_CDK(W) PRAGMA_CDK(GCC diagnostic ignored #W)
@@ -111,6 +111,25 @@
 #endif
 
 #define POP_SYS_WARNINGS_CDK  DIAGNOSTIC_POP_CDK
+
+
+/*
+  Macros to disable false positives from -Warray-bounds checks for lines
+  of code that were manually verified to be correct.
+*/
+
+#ifdef _MSC_VER
+
+#define PUSH_ARRAY_BOUNDS_WARNING_CDK DIAGNOSTIC_PUSH_CDK
+#define POP_ARRAY_BOUNDS_WARNING_CDK DIAGNOSTIC_POP_CDK
+
+#else
+
+#define PUSH_ARRAY_BOUNDS_WARNING_CDK \
+  DIAGNOSTIC_PUSH_CDK DISABLE_WARNING_CDK(-Warray-bounds)
+#define POP_ARRAY_BOUNDS_WARNING_CDK DIAGNOSTIC_POP_CDK
+
+#endif
 
 
 // Avoid warnings from Protobuf includes

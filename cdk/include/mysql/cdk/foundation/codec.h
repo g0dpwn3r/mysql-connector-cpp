@@ -220,7 +220,13 @@ static size_t convert(bytes buf, T &val)
     /*
       If buf size is smaller than sizeof(T), convert 1,2,4 or 8 initial
       bytes from the buffer: as much as fits into T.
+
+      Note: We check here that buffer size is big enough to store given amount
+      of bytes but compilers still complain under -Warray-bounds (seen on
+      Solaris with gcc 11.4).
     */
+
+PUSH_ARRAY_BOUNDS_WARNING_CDK
 
     if (buf.size() >= sizeof(T))
     {
@@ -251,6 +257,8 @@ static size_t convert(bytes buf, T &val)
                 buf.begin());
       return 1;
     }
+
+POP_ARRAY_BOUNDS_WARNING_CDK
 
     // TODO: better error description
     throw_error(cdkerrc::conversion_error,
