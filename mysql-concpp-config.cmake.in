@@ -155,10 +155,20 @@ else()
   set(JDBC_MYSQL_DEP OFF)
 endif()
 
-set(WITH_MYSQL ${JDBC_MYSQL_DEP}
-  CACHE INTERNAL
-  "MySQL install location (to find the client library)"
-)
+# Note: This script is executed as part of find_package() invocation. If
+# the invoking project sets WITH_MYSQL variable we want its value to be used
+# here as it should point at the actual install location. However, for some
+# reason set(WITH_MYSQL ... CACHE ...) overwrites cache entry with the same
+# name from the invoking project (probably a result of running it from inside
+# find_package()). To avoid override we define cache entry only if the variable
+# is not already set.
+
+if(NOT DEFINED WITH_MYSQL)
+  set(WITH_MYSQL ${JDBC_MYSQL_DEP}
+    CACHE INTERNAL
+    "MySQL install location (to find the client library)"
+  )
+endif()
 
 
 macro(main)
