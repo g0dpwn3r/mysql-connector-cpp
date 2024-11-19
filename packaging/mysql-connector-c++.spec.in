@@ -221,7 +221,8 @@ rm -rf %{buildroot}%{_libdir}/{plugin,private}
 
 %post jdbc -p /sbin/ldconfig
 
-%postun jdbc -p /sbin/ldconfig
+%postun jdbc
+/sbin/ldconfig
 
 
 ###############################################
