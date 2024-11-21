@@ -4045,6 +4045,17 @@ void connection::test_fido_webauthn(sql::ConnectOptionsMap &opt, bool callback_i
   if (getenv("PLUGIN_DIR"))
     opt[OPT_PLUGIN_DIR] = getenv("PLUGIN_DIR");
 
+  /*
+    This is for extra testing of WEBAUTHN_DEVICE_NUMBER option in various
+    scenarios of Webauthn authentication.
+  */
+
+  {
+    char *opt_val = getenv("WEBAUTHN_DEVICE_NUMBER");
+    if (opt_val)
+      opt[OPT_WEBAUTHN_DEVICE_NUMBER] = std::atoi(opt_val);
+  }
+
   sql::Driver * driver = sql::mysql::get_driver_instance();
 
   auto test_connection_drv = [&opt](int expected, sql::Driver *drv)

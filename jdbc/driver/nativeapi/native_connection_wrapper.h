@@ -140,20 +140,34 @@ public:
   virtual int get_option(::sql::mysql::MySQL_Connection_Options,
             const int &) = 0;
 
-  virtual int plugin_option(int plugin_type,
-                            const ::sql::SQLString & plugin_name,
-                            const ::sql::SQLString & option,
-                            const void * value) = 0;
+  /*
+    Note: The `default_value` flag informs whether the value to which option
+    is set is its default value. This can be used to avoid unnecessary loading
+    of the plugin.
+  */
 
-  virtual int plugin_option(int plugin_type,
-                            const ::sql::SQLString & plugin_name,
-                            const ::sql::SQLString & option,
-                            const ::sql::SQLString & value) = 0;
+  virtual int plugin_option(
+    int plugin_type,
+    const ::sql::SQLString & plugin_name,
+    const ::sql::SQLString & option,
+    const void * value,
+    bool default_value = false
+  ) = 0;
 
-  virtual int get_plugin_option(int plugin_type,
-                                const ::sql::SQLString & plugin_name,
-                                const ::sql::SQLString & option,
-                                const ::sql::SQLString & value) = 0;
+  virtual int plugin_option(
+    int plugin_type,
+    const ::sql::SQLString & plugin_name,
+    const ::sql::SQLString & option,
+    const ::sql::SQLString & value,
+    bool default_value = false
+  ) = 0;
+
+  virtual int get_plugin_option(
+    int plugin_type,
+    const ::sql::SQLString & plugin_name,
+    const ::sql::SQLString & option,
+    const ::sql::SQLString & value
+  ) = 0;
 
   virtual bool has_query_attributes() = 0;
 

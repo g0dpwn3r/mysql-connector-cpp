@@ -39,6 +39,7 @@
 #include <algorithm>
 #include <random>
 #include <mutex>
+#include <unordered_set>
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
 #endif
@@ -318,6 +319,16 @@ static const String2IntMap stringOptions[]=
     {OPT_LOAD_DATA_LOCAL_DIR, MYSQL_OPT_LOAD_DATA_LOCAL_DIR, false}
   };
 
+static const std::unordered_set<std::string> stringPluginOptions = {
+ OPT_OCI_CONFIG_FILE,
+ OPT_AUTHENTICATION_KERBEROS_CLIENT_MODE,
+ OPT_OCI_CLIENT_CONFIG_PROFILE,
+ OPT_OPENID_TOKEN_FILE
+};
+
+static const std::unordered_set<std::string> intPluginOptions = {
+ OPT_WEBAUTHN_DEVICE_NUMBER
+};
 
 //Option conversion for libmysqlclient < 80011
 
@@ -1335,12 +1346,12 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
     options are set here, before making a connection, to the values specified
     by this connection and driver.
 
-    The guard is needed to prevent overwritting plugin options by another
+    The guard is needed to prevent overwriting plugin options by another
     connection while this connection is being established.
 
     Note: If connection options do not specify a value for a plugin option that
     plugin option is set to null which resets it to its default value (which
-    could be overwriten by other connections).
+    could be overwritten by other connections).
 
     TODO: Move setting of plugin options later in the connection process, after
     any other options which can take long time to set (e.g. OpenSSL options or
@@ -1351,43 +1362,104 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
 
   MySQL_Connection::PluginGuard guard{this};
 
+  /*
+    Set option `option` of plugin `plugin_name` of type `plugin_type` to
+    the value given by connection option `con_opt_name` if it is specified.
+    Otherwise (if the connection option is not specified) reset plugin option
+    value to the default value given by `default_val`.
+
+    If plugin option value could not be set throw error with description given
+    by `err_msg` (not if the plugin option is set to its default value).
+
+    Note that for most plugin options the default value is restored when
+    the option is set to null.
+  */
+
   auto set_plugin_option = [this, &properties] (
     const ::sql::SQLString con_opt_name,
     int plugin_type,
     const ::sql::SQLString & plugin_name,
     const ::sql::SQLString & option,
-    const char * err_msg)
+    const char * err_msg,
+    const void* default_val = nullptr
+  )
   {
     sql::SQLString *p_s = nullptr;
+    const void* val = nullptr;
 
     auto opt = properties.find(con_opt_name);
     if (opt != properties.end())
     {
-      try {
-        p_s = (opt->second).get<sql::SQLString>();
-      } catch (sql::InvalidArgumentException&) {
-        throw sql::InvalidArgumentException(
-          "Wrong type passed for " + con_opt_name +
-          ". Expected sql::SQLString.");
+      if (stringPluginOptions.count(con_opt_name))
+      {
+        try
+        {
+          p_s = (opt->second).get<sql::SQLString>();
+          if (!p_s)
+            throw sql::InvalidArgumentException{
+              "No string value passed for " + con_opt_name
+            };
+          val = p_s->c_str();
+        }
+        catch (sql::InvalidArgumentException&)
+        {
+          throw sql::InvalidArgumentException(
+            "Wrong type passed for " + con_opt_name +
+            ". Expected sql::SQLString.");
+        }
+      }
+      else if (intPluginOptions.count(con_opt_name))
+      {
+        try
+        {
+          val = (opt->second).get<int>();
+          if (!val)
+            throw sql::InvalidArgumentException{
+              "No int value passed for " + con_opt_name
+            };
+        }
+        catch (sql::InvalidArgumentException&)
+        {
+          throw sql::InvalidArgumentException(
+            "Wrong type passed for " + con_opt_name +
+            ". Expected int.");
+        }
+      }
+      else
+      {
+        /*
+          We end up here only if below this lambda is called with connection
+          option that is not a plugin option (not listed in
+          `stringPluginOptions` or `intPluginOptions` -- that should never
+          happen.
+        */
+        assert(false);
       }
     }
 
-    /*
-      Note: the plugin option will be set to nullptr if the corresponding
-      connection option was not set. This has the effect of re-setting plugin
-      option to its default value (if it was changed).
-    */
+    try
+    {
+      /*
+        Note: `val` is null if the connection option was not set. In that case
+        we reset plugin option to the default value as given by `default_val`
+        parameter. The last argument of `plugin_option()` informs that the
+        option set is the default one which is the case when `val` is null.
+      */
 
-    const void* val = p_s ? p_s->c_str() : nullptr;
-    try {
-      proxy->plugin_option(plugin_type, plugin_name, option, val);
-    }  catch (sql::InvalidArgumentException &e) {
+      proxy->plugin_option(
+        plugin_type, plugin_name, option,
+        val ? val : default_val, val == nullptr
+      );
+    }
+    catch (sql::InvalidArgumentException &e)
+    {
       if (val)
-        // Throw only when setting a non-null value
+        // Throw only when setting to a non-default value
         throw ::sql::SQLUnsupportedOptionException(err_msg,
         con_opt_name.asStdString());
     }
   };
+
 
   set_plugin_option(OPT_OCI_CONFIG_FILE,
     MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
@@ -1419,18 +1491,30 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
     "Failed to set token file for authentication_openid_connect_client plugin"
   );
 
+  // Note: The default value for WebAuthN "device" option is 0.
+
+  const int webauthn_device_default_val = 0;
+
+  set_plugin_option(OPT_WEBAUTHN_DEVICE_NUMBER,
+    MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+    "authentication_webauthn_client",
+    "device",
+    "Failed to set a WebAuthn authentication device",
+    &webauthn_device_default_val
+  );
+
   /*
     Setting webauthn callback functions.
 
     The callback is an option of the webauthn authentication plugin that
     is configured on the driver level (as opposed to plugin options above,
     which are configured on per-connection basis). Correctly setting the option
-    based on driver configuration is handled by register_webauthn_callback() function
-    of PluginGuard class. The option will be set only if needed.
+    based on driver configuration is handled by register_webauthn_callback()
+    function of PluginGuard class. The option will be set only if needed.
 
-    Note: If register_webauthn_callback() sets a callback then the plugin options guard
-    ensures that this callback function is not modified by other connections
-    while being used.
+    Note: If register_webauthn_callback() sets a callback then the plugin
+    options guard ensures that this callback function is not modified by other
+    connections while being used.
   */
 
   guard.register_webauthn_callback(*static_cast<MySQL_Driver*>(driver));

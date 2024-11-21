@@ -563,19 +563,23 @@ struct MySQL_NativeConnectionWrapper::PluginGuard
 
 int
 MySQL_NativeConnectionWrapper::plugin_option(
-    int plugin_type,
-    const ::sql::SQLString & plugin_name,
-    const ::sql::SQLString & option,
-    const void * value)
-try{
+  int plugin_type,
+  const ::sql::SQLString & plugin_name,
+  const ::sql::SQLString & option,
+  const void * value,
+  bool default_value
+)
+try
+{
   PluginGuard guard{this};
+
   /*
-    Note: Try to load plugin into cache only if the option has non-default
-    value.
+    Note: Try to load plugin into cache only if the option is set to
+    a non-default value.
   */
 
   struct st_mysql_client_plugin *plugin
-  = guard.get_plugin(plugin_type, plugin_name, value != nullptr);
+  = guard.get_plugin(plugin_type, plugin_name, !default_value);
 
   /*
     Note: `plugin` can be null here only if we are setting option to
@@ -597,14 +601,19 @@ catch(sql::InvalidArgumentException &e)
   throw sql::InvalidArgumentException(err);
 }
 
+
 int
 MySQL_NativeConnectionWrapper::plugin_option(
-    int plugin_type,
-    const ::sql::SQLString & plugin_name,
-    const ::sql::SQLString & option,
-    const ::sql::SQLString & value)
+  int plugin_type,
+  const ::sql::SQLString & plugin_name,
+  const ::sql::SQLString & option,
+  const ::sql::SQLString & value,
+  bool default_value
+)
 {
-  return plugin_option(plugin_type, plugin_name, option, value.c_str());
+  return plugin_option(
+    plugin_type, plugin_name, option, value.c_str(), default_value
+  );
 }
 
 
