@@ -73,6 +73,8 @@ class MySQL_Prepared_Statement;
 namespace NativeAPI
 {
 class NativeConnectionWrapper;
+struct st_mysql_client_plugin;
+extern std::map <::sql::SQLString, st_mysql_client_plugin*> plugins_cache;
 }
 
 class CPPCONN_PUBLIC_FUNC MySQL_Connection : public sql::Connection
@@ -83,13 +85,15 @@ class CPPCONN_PUBLIC_FUNC MySQL_Connection : public sql::Connection
   MySQL_Statement * createServiceStmt();
 
 public:
-  MySQL_Connection(Driver * _driver,
-          ::sql::mysql::NativeAPI::NativeConnectionWrapper & _proxy,
+
+  using Proxy = ::sql::mysql::NativeAPI::NativeConnectionWrapper;
+
+  MySQL_Connection(Driver * _driver, Proxy& _proxy,
           const sql::SQLString& hostName,
           const sql::SQLString& userName,
           const sql::SQLString& password);
 
-  MySQL_Connection(Driver * _driver, ::sql::mysql::NativeAPI::NativeConnectionWrapper & _proxy,
+  MySQL_Connection(Driver * _driver, Proxy & _proxy,
           std::map< sql::SQLString, sql::ConnectPropertyVal > & options);
 
   virtual ~MySQL_Connection();
@@ -193,7 +197,7 @@ private:
 #pragma warning(push)
 #pragma warning(disable: 4251)
 #endif
-  std::shared_ptr< NativeAPI::NativeConnectionWrapper > proxy;
+  std::shared_ptr<Proxy> proxy;
 #ifdef _WIN32
 #pragma warning(pop)
 #endif
@@ -217,6 +221,57 @@ private:
   /* Prevent use of these */
   MySQL_Connection(const MySQL_Connection &);
   void operator=(MySQL_Connection &);
+
+  struct PluginGuard;
+};
+
+class MySQL_Driver;
+
+/*
+  A PluginGuard instance is used to lock plugin options so that no other
+  connections can set them while the guard exists.
+
+  It also manages the callback setting of the WebAuthN authentication
+  plugin -- see register_webauthn_callback() method.
+*/
+
+struct MySQL_Connection::PluginGuard
+{
+  std::weak_ptr<Proxy> prx;
+
+  PluginGuard(MySQL_Connection *c);
+  ~PluginGuard();
+
+  /*
+    Depending on whether user has set the WebAuthN callback
+    for the driver or not, this method arranges for either
+    the driver's callback or the default callback be called
+    in case WebAuthN authentication is used while making
+    a connection.
+  */
+  void register_webauthn_callback(MySQL_Driver &drv);
+
+  private:
+
+  /*
+    State of the WebAuthN plugin:
+
+    NONE    -- plugin is not loaded;
+    DEFAULT -- plugin is loaded and uses default callback;
+    CALLER  -- plugin is loaded and its callback is set to
+               the `callback_caller()` function.
+  */
+  static
+  enum class state { NONE, DEFAULT, CALLER } webauthn_plugin_state;
+
+  // The driver whose callback is called by `callback_caller()`
+  static sql::mysql::MySQL_Driver * callback_drv;
+
+  /*
+    Callback function to be registered with WebAuthN authentication plugin.
+    It calls the callback function of `callback_drv` if that is present.
+  */
+  static void callback_caller(const char* msg);
 };
 
 } /* namespace mysql */

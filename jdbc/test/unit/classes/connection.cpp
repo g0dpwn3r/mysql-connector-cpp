@@ -3986,8 +3986,18 @@ void connection::tls_deprecation()
   4. Set env variable MYSQL_WEBAUTHN to non-empty value
 */
 
-/* Variable value will be changed by callbacks */
-int callback_variable = -1;
+/*
+  Variable value will be changed by callbacks.
+  We want to use thread local variable to avoid theoretical race condition
+  when after a connection is made and before the check is done another
+  thread might modify the variable value.
+
+  The aim of the test is to make sure the correct callback is called inside
+  each thread. If the wrong callback is called the local thread variable
+  will have unexpected value. Hence we can detect if the driver incorrectly
+  handles setting of callbacks.
+*/
+thread_local int callback_variable = -1;
 
 void my_callback(sql::SQLString s)
 {
@@ -4040,9 +4050,14 @@ void connection::test_fido_webauthn(sql::ConnectOptionsMap &opt, bool callback_i
   auto test_connection_drv = [&opt](int expected, sql::Driver *drv)
   {
     callback_variable = 0;
-    cout << "Before connect: " << callback_variable << endl;
-    Connection fido_connection(drv->connect(opt));
-    cout << "After connect: " << callback_variable << endl;
+    cout << "Before connect: " << callback_variable <<
+            " Expected: " << expected <<
+            " DRIVER=" << drv << " THREAD=" << std::this_thread::get_id() << endl;
+    auto cn = drv->connect(opt);
+    Connection fido_connection(cn);
+    cout << "After connect: " << callback_variable <<
+            " Expected: " << expected <<
+            " DRIVER=" << drv << " THREAD=" << std::this_thread::get_id() << endl;
     ASSERT_EQUALS(expected, callback_variable);
   };
 
@@ -4053,7 +4068,6 @@ void connection::test_fido_webauthn(sql::ConnectOptionsMap &opt, bool callback_i
 
   try
   {
-
     cout << endl << "Default callback (0)" << endl;
     test_connection(0);
 
@@ -4086,46 +4100,66 @@ void connection::test_fido_webauthn(sql::ConnectOptionsMap &opt, bool callback_i
 
     cout << endl << "Multi driver tests: " << endl;
 
-    auto multi_drv_test = [test_connection_drv]()
+    /*
+      The driver instances should be created before they are
+      used inside the multi-thread test.
+    */
+    sql::Driver *driver1 = sql::mysql::get_driver_instance_by_name("drv1");
+    sql::Driver *driver2 = sql::mysql::get_driver_instance_by_name("drv2");
+
+    auto multi_drv_test = [test_connection_drv, driver1, driver2]()
     {
-      sql::Driver * driver1 = sql::mysql::get_driver_instance_by_name("drv1");
-      driver1->setCallBack(CB{[](sql::SQLString msg) {
-        cout << "Driver 1 Callback : " << msg << endl;
+      driver1->setCallBack(CB{[driver1](sql::SQLString msg) {
+        cout << "Driver 1 Callback : " << msg << " DRIVER=" <<
+          driver1 << " THREAD=" << std::this_thread::get_id() << endl;
         callback_variable = 111;
       }});
 
-      sql::Driver * driver2 = sql::mysql::get_driver_instance_by_name("drv2");
-      driver2->setCallBack(CB{[](sql::SQLString msg) {
-        cout << "Driver 2 Callback : " << msg << endl;
+      driver2->setCallBack(CB{[driver2](sql::SQLString msg) {
+        cout << "Driver 2 Callback : " << msg << " DRIVER=" <<
+        driver2 << " THREAD=" << std::this_thread::get_id() << endl;
         callback_variable = 222;
       }});
 
       test_connection_drv(111, driver1);
       test_connection_drv(222, driver2);
 
-      // Multi-driver callbacks have to be reset too.
-      // Otherwise they will remain set in the next test.
-      driver1->setCallBack(CB{nullptr});
-      driver2->setCallBack(CB{nullptr});
     };
 
     multi_drv_test();
+
+    /*
+      Multi-driver callbacks have to be reset too.
+      Otherwise they will remain set in the next test.
+    */
+
+    driver1->setCallBack(CB{nullptr});
+    driver2->setCallBack(CB{nullptr});
 
     cout << endl << "Multithread driver tests: " << endl;
 
     {
       std::vector<std::thread> workers;
 
-      for (int i = 0; i < 3; ++i)
-      {
+      for (int i = 0; i < 3; ++i) {
         workers.push_back(std::thread{multi_drv_test});
       }
 
-      for (auto &w : workers)
-      {
+      for (auto &w : workers) {
         w.join();
       }
     }
+
+    /*
+      Multi-driver callbacks have to be reset after all threads finish.
+      Otherwise, resetting a callback for a driver after one thread
+      is finished, but another one is still running will result in
+      premature disabling of the callbacks.
+    */
+
+    driver1->setCallBack(CB{nullptr});
+    driver2->setCallBack(CB{nullptr});
+
   }
   catch (sql::SQLException &e)
   {
@@ -4387,7 +4421,7 @@ void connection::openid_token()
     sql::ConnectOptionsMap opts = map;
     opts[OPT_USERNAME] = "MySQLUser";
     opts["hostName"] = url;
-    
+
     if (getenv("PLUGIN_DIR"))
       opts[OPT_PLUGIN_DIR] = getenv("PLUGIN_DIR");
 

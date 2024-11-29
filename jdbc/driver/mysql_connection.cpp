@@ -96,10 +96,6 @@
 #endif
 
 
-bool oci_plugin_is_loaded = false;
-bool openid_plugin_is_loaded = false;
-
-
 #ifdef DEFAULT_PLUGIN_DIR
 std::string default_plugin_dir(DEFAULT_PLUGIN_DIR);
 #else
@@ -429,130 +425,182 @@ struct Prio
 };
 
 
-/*
-  A callback setter object arranges for WebAuthn/Fido authentication
-  callbacks to be used by the WebAuthn clientlib authentication plugin.
-
-  If a user has registered a callback with a driver that creates a connection
-  then a callback function is registered with authentication plugin which will
-  call the callback stored in the driver.
-
-  The callback function registered with authentication plugin must be changed
-  depending on which driver is used to create a connection. A callback setter
-  object makes necessary changes when it detects that the current driver passed
-  to its ctor is different from the one used last time.
-
-  While exists, callback setter also prevents modification of authentication
-  plugin callbacks by concurrent threads.
-*/
-
-struct MySQL_Driver::WebAuthn_Callback_Setter
-{
-  using Proxy = NativeAPI::NativeConnectionWrapper;
-
-  WebAuthn_Callback_Setter(MySQL_Driver &drv, Proxy *prx)
-    : lock{mutex}
-  {
-    /*
-      Note: Meaning of callback type value:
-
-      0 or 3 = no callback
-      1 or 4 = webauthn only callback
-      2 or 5 = webauthn and fido callback
-
-      Values 3,4,5 indicate that the callback function has been already
-      (de-)registered with the plugin(s).
-    */
-
-    auto callback_type = reinterpret_cast<intptr_t>(drv.fido_callback);
-
-    /*
-      Do nothing if we use the same driver as last time nad (de-)registration
-      was already done.
-    */
-
-    if ((2 < callback_type) && (driver == &drv))
-      return;
-
-    driver = &drv;  // Set current driver.
-
-    /*
-      Note: A webauthn callback (callback_type 2 or 5) is registered with
-      "webauthn" plugin as well as fido callback (callback_type 1 or 4).
-      If user did not register any callback (callback_type 0 or 3) then
-      plugin callback is re-set to null.
-    */
-
-    register_callback(prx, (callback_type % 3) > 0);
-
-    /*
-      Note: This will be reset to value 0-2 when user deregisters
-      the callback or registers a new one.
-    */
-
-    drv.fido_callback = reinterpret_cast<Fido_Callback*>(callback_type + 3);
-  }
-
- private:
-
-  // The driver whose callback will be called by authentication plugins.
-
-  static sql::mysql::MySQL_Driver * driver;
-
-  /*
-    Callback function to be registered with authentication plugins.
-    If the current driver has a stored callback then it is being called.
-  */
-
-  static void callback_func(const char* msg)
-  {
-    if (!driver || !driver->fido_callback)
-      return;
-    driver->webauthn_callback(msg);
-  }
-
-  static std::mutex mutex;
-  std::lock_guard<std::mutex> lock;
-
-  static
-  void register_callback(Proxy *proxy, bool set_or_reset)
-  {
-    std::string plugin = "authentication_webauthn_client";
-    std::string opt = "plugin_authentication_webauthn_client";
-
-    try
-    {
-      proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-        plugin.c_str(), opt.c_str(),
-        set_or_reset ? (const void*)callback_func : nullptr
-      );
-    }
-    catch (sql::MethodNotImplementedException &)
-    {
-      // Note: Ignore errors when re-setting the callback
-
-      if(!set_or_reset)
-        return;
-
-    }
-    catch (sql::InvalidArgumentException &e)
-    {
-      if(!set_or_reset)
-        return;
-
-      throw ::sql::SQLException(
-          "Failed to set fido message callback for "
-          + plugin + " plugin");
-    }
-  };
-
-};
-
-
-std::mutex MySQL_Driver::WebAuthn_Callback_Setter::mutex;
-sql::mysql::MySQL_Driver *MySQL_Driver::WebAuthn_Callback_Setter::driver
+sql::mysql::MySQL_Driver *MySQL_Connection::PluginGuard::callback_drv
   = nullptr;
 
+MySQL_Connection::PluginGuard::state
+MySQL_Connection::PluginGuard::webauthn_plugin_state
+ = state::NONE;
+
+MySQL_Connection::PluginGuard::PluginGuard(MySQL_Connection *c)
+: prx{c->proxy}
+{
+  //assert(c);
+  if (!prx.expired())
+    prx.lock()->lock_plugin(true);
+}
+
+
+/*
+  This method arranges for the WebAuthN authentication plugin callback to be
+  set in agreement with the webauthn callback function specified by the given
+  driver:
+
+    1. If driver's callback is set then that callback should be called by
+       the plugin (if the plugin is used during authentication).
+
+    2. Otherwise, if there is no driver specific callback, the plugin should
+       use its default callback.
+*/
+
+void MySQL_Connection::PluginGuard::register_webauthn_callback(MySQL_Driver &drv)
+{
+  std::string plugin = "authentication_webauthn_client";
+  std::string opt = "plugin_authentication_webauthn_client_messages_callback";
+
+  if (prx.expired())
+    return;
+
+  auto proxy = prx.lock();
+
+  /*
+    Compute desired plugin state based on its current state nad driver settings.
+
+    Returns NONE if plugin is already in correct state, DEFAULT if plugin's
+    default callback should be restored or CALLER if plugin should
+    be configured to call driver's callback.
+  */
+
+  auto target_state = [&]() -> state
+  {
+    /*
+      If no WebAuthN callback is registered in the driver but
+      the plugin was configured to call driver's callback
+      ( webauthn_plugin_state == CALLER ) we must reset plugin to use its
+      default callback.
+
+      Note that nothing needs to be done if plugin is not loaded at the moment
+      ( webauthn_plugin_state == NONE ) because in that case if the plugin
+      is loaded during authentication it will use its default callback as
+      required.
+    */
+
+    if (!drv.webauthn_callback && webauthn_plugin_state == state::CALLER)
+      return state::DEFAULT;
+
+    /*
+      If driver has a WebAuthN callback but the plugin is not configured
+      to call it ( webauthn_plugin_state != CALLER ) or the driver whose
+      callback would be called is not correct ( callback_drv != &drv ) we must
+      configure the plugin accordingly.
+    */
+
+    if (
+      drv.webauthn_callback
+      && (webauthn_plugin_state != state::CALLER || callback_drv != &drv)
+    )
+      return state::CALLER;
+
+    // If neither of the above then the plugin is already in the correct state.
+
+    return state::NONE;
+  };
+
+
+  try
+  {
+    /*
+      There is nothing to be done if the plugin is already correctly
+      configured. We also know that no concurrent thread that makes
+      a connection can change plugin configuration because to do so it would
+      need to first grab an exclusive plugin lock (see below) and that is
+      not possible while this thread holds a shared lock.
+    */
+
+    if (state::NONE == target_state())
+      return;
+
+    /*
+      Current plugin configuration is not as needed nad we must change it
+      accordingly. To do so we first grab an exclusive plugin lock to ensure
+      that we don't change the current plugin configuration while another
+      thread is making connection and relying on it.
+    */
+
+    proxy->lock_plugin_exclusive();
+
+    /*
+      Note that while upgrading the lock to an exclusive one other threads can
+      get it before this thread and can change the plugin configuration that
+      was present during first `target_state()` call above. For that reason we
+      call `target_state()` again to re-evaluate the required changes and act
+      accordingly.
+    */
+
+    switch (target_state())
+    {
+      case state::DEFAULT:
+      {
+        /*
+          Note: setting callback option to nullptr restores plugin's default
+          callback.
+        */
+        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+          plugin, opt, nullptr);
+        webauthn_plugin_state = state::DEFAULT;
+      }
+      break;
+
+      case state::CALLER:
+      {
+        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+          plugin, opt, (const void*)callback_caller);
+        callback_drv = &drv;
+        webauthn_plugin_state = state::CALLER;
+      }
+      break;
+
+
+      default: break;
+    }
+
+    /*
+      At this point we have plugin configured as required by the diver callback
+      settings and we know this will not change as long as we hold the plugin
+      lock.
+    */
+  }
+  catch (sql::MethodNotImplementedException &)
+  {
+    // Note: Ignore errors when re-setting the callback
+    if(!drv.webauthn_callback)
+      return;
+
+  }
+  catch (sql::InvalidArgumentException &e)
+  {
+    if(!drv.webauthn_callback)
+      return;
+
+    throw ::sql::SQLException(
+        "Failed to set fido message callback for "
+        + plugin + " plugin");
+  }
+
+}
+
+void MySQL_Connection::PluginGuard::callback_caller(const char* msg)
+{
+  if (!callback_drv || !callback_drv->webauthn_callback)
+    return;
+  callback_drv->webauthn_callback(msg);
+}
+
+MySQL_Connection::PluginGuard::~PluginGuard()
+{
+  if (!prx.expired())
+    prx.lock()->lock_plugin(false);
+}
 
 /*
   We support :
@@ -1253,86 +1301,6 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
       proxy->options(MYSQL_OPT_SSL_MODE, &ssl_mode_val);
 
   #endif
-    } else if (!it->first.compare(OPT_OCI_CONFIG_FILE)) {
-      try {
-        p_s= (it->second).get<sql::SQLString>();
-      } catch (sql::InvalidArgumentException&) {
-        throw sql::InvalidArgumentException("Wrong type passed for OPT_OCI_CONFIG_FILE. Expected sql::SQLString.");
-      }
-
-      try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                                "authentication_oci_client",
-                                "oci-config-file",
-                                *p_s);
-        oci_plugin_is_loaded = true;
-      }  catch (sql::InvalidArgumentException &e) {
-        throw ::sql::SQLUnsupportedOptionException(
-          "Failed to set config file for authentication_oci_client plugin",
-          OPT_OCI_CONFIG_FILE
-        );
-      }
-    } else if (!it->first.compare(OPT_OCI_CLIENT_CONFIG_PROFILE)) {
-      try {
-        p_s = (it->second).get<sql::SQLString>();
-      } catch (sql::InvalidArgumentException &) {
-        throw sql::InvalidArgumentException(
-            "Wrong type passed for OPT_OCI_CLIENT_CONFIG_PROFILE. Expected "
-            "sql::SQLString.");
-      }
-
-      try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                             "authentication_oci_client",
-                             "authentication-oci-client-config-profile", *p_s);
-        oci_plugin_is_loaded = true;
-      } catch (sql::InvalidArgumentException &e) {
-        throw ::sql::SQLUnsupportedOptionException(
-            "Failed to set config profile for authentication_oci_client plugin",
-            OPT_OCI_CLIENT_CONFIG_PROFILE);
-      }
-
-    } else if (!it->first.compare(OPT_AUTHENTICATION_KERBEROS_CLIENT_MODE)) {
-#if defined(_WIN32)
-      try {
-        p_s = (it->second).get<sql::SQLString>();
-      } catch (sql::InvalidArgumentException &) {
-        throw sql::InvalidArgumentException(
-            "Wrong type passed for OPT_AUTHENTICATION_KERBEROS_CLIENT_MODE. "
-            "Expected sql::SQLString.");
-      }
-
-      try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                             "authentication_kerberos_client",
-                             "plugin_authentication_kerberos_client_mode",
-                             *p_s);
-      } catch (sql::InvalidArgumentException &e) {
-        throw ::sql::SQLUnsupportedOptionException(
-            "Failed to set config file for authentication_kerberos_client "
-            "plugin",
-            OPT_AUTHENTICATION_KERBEROS_CLIENT_MODE);
-      }
-#endif  // defined(_WIN32)
-    } else if (!it->first.compare(OPT_OPENID_TOKEN_FILE)) {
-      try {
-        p_s= (it->second).get<sql::SQLString>();
-      } catch (sql::InvalidArgumentException&) {
-        throw sql::InvalidArgumentException("Wrong type passed for OPT_OPENID_TOKEN_FILE. Expected sql::SQLString.");
-      }
-
-      try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                                "authentication_openid_connect_client",
-                                "id-token-file",
-                                *p_s);
-        openid_plugin_is_loaded = true;
-      }  catch (sql::InvalidArgumentException &e) {
-        throw ::sql::SQLUnsupportedOptionException(
-          "Failed to set token file for authentication_openid_connect_client plugin",
-          OPT_OPENID_TOKEN_FILE
-        );
-      }
     } else if (!it->first.compare(OPT_PLUGIN_DIR)) {
       // Nothing to do here: this option was handeld before the loop
 
@@ -1358,49 +1326,115 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
 
   } /* End of cycle on connection options map */
 
-  if (oci_plugin_is_loaded) {
-    if (properties.find(OPT_OCI_CONFIG_FILE) == properties.end()) {
-      // If OCI plugin is loaded, but oci-config-file is not explicitly set
-      // the option value needs resetting.
+
+  /*
+    Setting plugin options.
+
+    Note that plugins are shared between different drivers but each driver and
+    each connection can have its own plugin settings. For that reason plugin
+    options are set here, before making a connection, to the values specified
+    by this connection and driver.
+
+    The guard is needed to prevent overwritting plugin options by another
+    connection while this connection is being established.
+
+    Note: If connection options do not specify a value for a plugin option that
+    plugin option is set to null which resets it to its default value (which
+    could be overwriten by other connections).
+
+    TODO: Move setting of plugin options later in the connection process, after
+    any other options which can take long time to set (e.g. OpenSSL options or
+    options involving DNS resolution). This is because setting plugin options
+    can potentially block other connection and this blocking should be as short
+    as possible.
+  */
+
+  MySQL_Connection::PluginGuard guard{this};
+
+  auto set_plugin_option = [this, &properties] (
+    const ::sql::SQLString con_opt_name,
+    int plugin_type,
+    const ::sql::SQLString & plugin_name,
+    const ::sql::SQLString & option,
+    const char * err_msg)
+  {
+    sql::SQLString *p_s = nullptr;
+
+    auto opt = properties.find(con_opt_name);
+    if (opt != properties.end())
+    {
       try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                             "authentication_oci_client",
-                             "oci-config-file",
-                             nullptr);
-      } catch (sql::InvalidArgumentException &) {
-        // Do nothing, the exception is expected.
+        p_s = (opt->second).get<sql::SQLString>();
+      } catch (sql::InvalidArgumentException&) {
+        throw sql::InvalidArgumentException(
+          "Wrong type passed for " + con_opt_name +
+          ". Expected sql::SQLString.");
       }
     }
 
-    if (properties.find(OPT_OCI_CLIENT_CONFIG_PROFILE) == properties.end()) {
-      // If OCI plugin is loaded, but oci-config-profile is not explicitly set
-      // the option value needs resetting.
-      try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                             "authentication_oci_client",
-                             "authentication-oci-client-config-profile",
-                             nullptr);
-      } catch (sql::InvalidArgumentException &) {
-        // Do nothing, the exception is expected.
-      }
-    }
+    /*
+      Note: the plugin option will be set to nullptr if the corresponding
+      connection option was not set. This has the effect of re-setting plugin
+      option to its default value (if it was changed).
+    */
 
-  }
-
-  if (openid_plugin_is_loaded) {
-    if (properties.find(OPT_OPENID_TOKEN_FILE) == properties.end()) {
-      // If OpenID plugin is loaded, but OPT_OPENID_TOKEN_FILE is not explicitly set
-      // the option value needs resetting.
-      try {
-        proxy->plugin_option(MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
-                             "authentication_openid_connect_client",
-                             "id-token-file",
-                             nullptr);
-      } catch (sql::InvalidArgumentException &) {
-        // Do nothing, the exception is expected.
-      }
+    const void* val = p_s ? p_s->c_str() : nullptr;
+    try {
+      proxy->plugin_option(plugin_type, plugin_name, option, val);
+    }  catch (sql::InvalidArgumentException &e) {
+      if (val)
+        // Throw only when setting a non-null value
+        throw ::sql::SQLUnsupportedOptionException(err_msg,
+        con_opt_name.asStdString());
     }
-  }
+  };
+
+  set_plugin_option(OPT_OCI_CONFIG_FILE,
+    MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+    "authentication_oci_client",
+    "oci-config-file",
+    "Failed to set config file for authentication_oci_client plugin"
+  );
+
+  set_plugin_option(OPT_OCI_CLIENT_CONFIG_PROFILE,
+    MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+    "authentication_oci_client",
+    "authentication-oci-client-config-profile",
+    "Failed to set config profile for authentication_oci_client plugin"
+  );
+
+#if defined(_WIN32)
+  set_plugin_option(OPT_AUTHENTICATION_KERBEROS_CLIENT_MODE,
+    MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+    "authentication_kerberos_client",
+    "plugin_authentication_kerberos_client_mode",
+    "Failed to set config file for authentication_kerberos_client plugin"
+  );
+#endif
+
+  set_plugin_option(OPT_OPENID_TOKEN_FILE,
+    MYSQL_CLIENT_AUTHENTICATION_PLUGIN,
+    "authentication_openid_connect_client",
+    "id-token-file",
+    "Failed to set token file for authentication_openid_connect_client plugin"
+  );
+
+  /*
+    Setting webauthn callback functions.
+
+    The callback is an option of the webauthn authentication plugin that
+    is configured on the driver level (as opposed to plugin options above,
+    which are configured on per-connection basis). Correctly setting the option
+    based on driver configuration is handled by register_webauthn_callback() function
+    of PluginGuard class. The option will be set only if needed.
+
+    Note: If register_webauthn_callback() sets a callback then the plugin options guard
+    ensures that this callback function is not modified by other connections
+    while being used.
+  */
+
+  guard.register_webauthn_callback(*static_cast<MySQL_Driver*>(driver));
+
 
 #undef PROCESS_CONNSTR_OPTION
 
@@ -1572,16 +1606,6 @@ void MySQL_Connection::init(ConnectOptionsMap & properties)
       }
 
     }
-
-    /*
-      Note: If needed the setter will update callback functions registered with
-      webauthn/fido authentication plugins to call the callback stored
-      in the driver. It also protects the callbacks from being modified while
-      connection is being made.
-    */
-
-    MySQL_Driver::WebAuthn_Callback_Setter
-    setter{*static_cast<MySQL_Driver*>(driver), proxy.get()};
 
     //Connect loop
     {

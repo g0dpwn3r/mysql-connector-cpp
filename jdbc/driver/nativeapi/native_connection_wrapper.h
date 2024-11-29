@@ -69,6 +69,7 @@ enum Protocol_Type
   PROTOCOL_COUNT
 };
 
+
 class NativeConnectionWrapper : public util::nocopy
 {
 public:
@@ -180,6 +181,43 @@ public:
 
   virtual unsigned int warning_count() = 0;
 
+  /*
+    This method is used to lock plugin options.
+
+    After lock_plugin(true) call other connections that try to set plugin
+    options using plugin_option() methods will wait until lock_plugin(false)
+    is called on this connection.
+  */
+
+  virtual void lock_plugin(bool) = 0;
+
+  /*
+    This method is used to lock plugin options exclusively before making any
+    plugin_option() call.
+
+    Normally a thread takes an exclusive lock on plugin options only when it
+    calls `plugin_option()` method to modify one. This might however lead to
+    a race condition in a situation like this:
+
+      lock_plugin(true);             // lock plugin options
+      val = get_plugin_option(...);  // read some option <1>
+      plugin_option(...);            // write other option <2>
+
+    If in <2> we want to set option X based on the value `val` of another
+    option Y that was read in step <1> there is no guarantee that at the time
+    of setting option X option Y has still the same value `val` that we saw
+    before. This is because while plugin_option() waits for exclusive access
+    to the options another thread can get that exclusive access first and
+    modify the value of Y. To avoid such race condition the code should grab
+    an exclusive lock on plugin options up-front rather than during
+    `plugin_option()` call:
+
+      lock_plugin_exclusive();
+      val = get_plugin_option(...);
+      plugin_option(...);
+  */
+
+  virtual void lock_plugin_exclusive() = 0;
 };
 
 } /* namespace NativeAPI */

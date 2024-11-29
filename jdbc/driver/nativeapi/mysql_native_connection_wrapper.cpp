@@ -34,6 +34,7 @@
 #include <cppconn/exception.h>
 
 #include <memory>
+#include <map>
 
 #include "../mysql_util.h"
 #include "../mysql_connection_options.h"
@@ -51,6 +52,9 @@ namespace mysql
 {
 namespace NativeAPI
 {
+
+std::shared_mutex plugins_cache_mutex;
+std::map <::sql::SQLString, st_mysql_client_plugin*> plugins_cache;
 
 /*
   Function to convert sql::mysql::MySQL_Connection_Options to
@@ -452,6 +456,111 @@ MySQL_NativeConnectionWrapper::get_option(::sql::mysql::MySQL_Connection_Options
 }
 /* }}} */
 
+
+/*
+  Accessing plugin options.
+*/
+
+void MySQL_NativeConnectionWrapper::lock_plugin_impl(lock_type type)
+{
+  switch (type)
+  {
+    case lock_type::GUARD:
+    case lock_type::SHARED:
+      // Note: We don't take shared lock if exclusive lock is in place
+      if (!plugins_ex_lock.owns_lock() && !plugins_sh_lock.owns_lock())
+        plugins_sh_lock.lock();
+
+      if (!plugin_guard)
+        plugin_guard = (lock_type::GUARD == type);
+    break;
+
+    case lock_type::EXCLUSIVE:
+      // Nothing to do if we already hold an exclusive lock
+      if (plugins_ex_lock.owns_lock())
+        break;
+      // Before taking exclusive lock we need to release the shared lock
+      if (plugins_sh_lock.owns_lock())
+        plugins_sh_lock.unlock();
+      // This will wait until no other connection holds a lock
+      plugins_ex_lock.lock();
+    break;
+
+    case lock_type::UNLOCK:
+      // UNLOCK has no effect if GUARD lock was taken
+      if (plugin_guard)
+        break;
+      // Otherwise UNLOCK and UNGUARD are the same
+      // FALLTHROUGH
+    case lock_type::UNGUARD:
+      if (plugins_sh_lock.owns_lock())
+        plugins_sh_lock.unlock();
+      if (plugins_ex_lock.owns_lock())
+        plugins_ex_lock.unlock();
+    break;
+  }
+}
+
+struct MySQL_NativeConnectionWrapper::PluginGuard
+{
+  using ConWrapper = MySQL_NativeConnectionWrapper;
+
+  ConWrapper *conn;
+
+  PluginGuard(ConWrapper *c)
+  : conn{c}
+  {
+    conn->lock_plugin_impl(lock_type::SHARED);
+  }
+
+  ~PluginGuard()
+  {
+    // Note: This will do nothing if external guard was created
+    conn->lock_plugin_impl(lock_type::UNLOCK);
+  }
+
+  // Upgrade initial shared lock to exclusive one
+
+  void lock()
+  {
+    conn->lock_plugin_impl(lock_type::EXCLUSIVE);
+  }
+
+  /*
+    Find a plugin in the plugin cache. If `load` is true then loads the plugin
+    into cache if not already there; otherwise null is returned if the plugin
+    was not found.
+
+    Throws error if loading of the plugin failed.
+  */
+
+  st_mysql_client_plugin*
+  get_plugin(int plugin_type, SQLString const &name, bool load)
+  {
+    /*
+      Note: Shared plugin lock is held when this method is called (taken in
+      the constructor).
+    */
+
+    if (plugins_cache.count(name) > 0)
+      return plugins_cache.at(name);
+    else if (load)
+    {
+      /* load client authentication plugin if required */
+      auto *plugin = conn->api->client_find_plugin(conn->mysql, name.c_str(), plugin_type);
+
+      lock();  // Upgrade to exclusive lock before writing to cache
+
+      plugins_cache.emplace(name, plugin);
+
+      return plugin;
+    }
+    else
+      return nullptr;
+  }
+};
+
+
 int
 MySQL_NativeConnectionWrapper::plugin_option(
     int plugin_type,
@@ -459,14 +568,27 @@ MySQL_NativeConnectionWrapper::plugin_option(
     const ::sql::SQLString & option,
     const void * value)
 try{
+  PluginGuard guard{this};
+  /*
+    Note: Try to load plugin into cache only if the option has non-default
+    value.
+  */
 
-  /* load client authentication plugin if required */
-  struct st_mysql_client_plugin *plugin =
-      api->client_find_plugin(mysql, plugin_name.c_str(), plugin_type);
+  struct st_mysql_client_plugin *plugin
+  = guard.get_plugin(plugin_type, plugin_name, value != nullptr);
 
-  /* set option value in plugin */
+  /*
+    Note: `plugin` can be null here only if we are setting option to
+    the default value and the plugin was not found in the cache. Otherwise
+    an attempt to load the plugin will be made and error will be thrown if
+    it could not be done.
+  */
+
+  if (!plugin)
+    return 0;
+
+  guard.lock();  // Note: Only now an exclusive lock is required
   return api->plugin_options(plugin, option.c_str(), value);
-
 }
 catch(sql::InvalidArgumentException &e)
 {
@@ -481,22 +603,10 @@ MySQL_NativeConnectionWrapper::plugin_option(
     const ::sql::SQLString & plugin_name,
     const ::sql::SQLString & option,
     const ::sql::SQLString & value)
-try{
-
-  /* load client authentication plugin if required */
-  struct st_mysql_client_plugin *plugin =
-      api->client_find_plugin(mysql, plugin_name.c_str(), plugin_type);
-
-  /* set option value in plugin */
-  return api->plugin_options(plugin, option.c_str(), value.c_str());
-
-}
-catch(sql::InvalidArgumentException &e)
 {
-  std::string err(e.what());
-  err+= " for plugin " + plugin_name;
-  throw sql::InvalidArgumentException(err);
+  return plugin_option(plugin_type, plugin_name, option, value.c_str());
 }
+
 
 int MySQL_NativeConnectionWrapper::get_plugin_option(
     int plugin_type,
@@ -504,12 +614,10 @@ int MySQL_NativeConnectionWrapper::get_plugin_option(
     const ::sql::SQLString & option,
     const ::sql::SQLString & value)
 {
-
+  PluginGuard guard{this};
 
   /* load client authentication plugin if required */
-  struct st_mysql_client_plugin *plugin =
-      api->client_find_plugin(mysql, plugin_name.c_str(),
-                              plugin_type);
+  struct st_mysql_client_plugin *plugin = guard.get_plugin(plugin_type, plugin_name, true);
 
   /* get option value from plugin */
   return api->plugin_get_option(plugin, option.c_str(), (void*)value.c_str());

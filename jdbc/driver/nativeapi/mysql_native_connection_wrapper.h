@@ -37,7 +37,8 @@
 
 #include <cppconn/sqlstring.h>
 #include <memory>
-
+#include <mutex>
+#include <shared_mutex>
 
 namespace sql
 {
@@ -53,12 +54,12 @@ inline const char * nullIfEmpty(const ::sql::SQLString & str)
   return str.length() > 0 ? str.c_str() : NULL;
 }
 
+extern std::shared_mutex plugins_cache_mutex;
 
 class MySQL_NativeConnectionWrapper : public NativeConnectionWrapper
 {
   /* api should be declared before mysql here */
   std::shared_ptr<IMySQLCAPI> api;
-
   bool reconnect = false;
   ::sql::SQLString m_host;
   ::sql::SQLString m_user;
@@ -176,6 +177,65 @@ public:
  NativeStatementWrapper &stmt_init() override;
 
  unsigned int warning_count() override;
+
+  void lock_plugin(bool lock_or_unlock) override
+  {
+    lock_plugin_impl(lock_or_unlock ? lock_type::GUARD : lock_type::UNGUARD);
+  }
+
+  void lock_plugin_exclusive() override
+  {
+    lock_plugin_impl(lock_type::EXCLUSIVE);
+  }
+
+  /*
+    Implementation of plugin locking.
+
+    There are the following lock request that can be made with
+    lock_plugin_impl() method:
+
+    - SHARED lock can be taken if there are no EXCLUSIVE locks present (when
+      requested it watis until this is the case), existence of other SHARED
+      (or GUARD) locks does not prevent SHARED lock to be taken;
+
+    - GUARD lock is like a SHARED lock but it prevents locks to be released
+      by UNLOCK request (see below).
+
+    - EXCLUSIVE lock can be taken only when no other connection holds any type
+      of lock (when requested it waits until this is the case). EXCLUSIVE lock
+      can be requested while holding SHARED or GUARD lock.
+
+    The UNLOCK request is used to remove SHARED or EXCLUSIVE locks provided
+    that no GUARD lock was taken. If GUARD lock was taken then an UNLOCK
+    request has no effect -- any locks taken remain in place. Only UNGUARD
+    request can be used to remove locks after GUARD request -- either
+    the original GUARD lock or an EXCLUSIVE lock to which it was upgraded.
+
+    If connection already holds a plugin lock then another request to get
+    a lock has the following effect depending on the requested lock type:
+
+    - EXCLUSIVE - upgrade shared lock to exclusive one
+    - GUARD     - keep existing locks until UNGUARD request is made
+    - SHARED    - no effect
+  */
+
+  enum class lock_type {GUARD, SHARED, EXCLUSIVE, UNLOCK, UNGUARD};
+
+  void lock_plugin_impl(lock_type);
+
+  // These are used by lock_plugin_impl()
+
+  std::shared_lock<std::shared_mutex> plugins_sh_lock{plugins_cache_mutex, std::defer_lock};
+  std::unique_lock<std::shared_mutex> plugins_ex_lock{plugins_cache_mutex, std::defer_lock};
+  bool plugin_guard = false;
+
+  /*
+    This class handles locking of plugin when plugin options are set
+    (in plugin_option() methods) as well as implements access to the plugin
+    cache.
+  */
+
+  struct PluginGuard;
 };
 
 } /* namespace NativeAPI */

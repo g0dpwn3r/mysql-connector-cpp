@@ -207,15 +207,15 @@ void MySQL_Driver::setCallBack(sql::WebAuthn_Callback& cb)
 
 
 /*
-  Note: Values 1 and 4 of `fido_callback` mean that user has set a WebAuthn
+  Note: Value 1 of `fido_callback` means that user has set a WebAuthn
   callback before and it can not be overwritten by Fido one. If later user
-  de-registers a WebAuthn callaback then `fido_callback` becomes 0 or 4 and
+  de-registers a WebAuthn callaback then `fido_callback` becomes 0 and
   error will not be thrown -- user can set a new Fido callback in this
   situation.
 */
 
 #define CHECK_FIDO_ERROR \
-  if (1 == (reinterpret_cast<intptr_t>(fido_callback) % 3)) \
+  if (1 == reinterpret_cast<intptr_t>(fido_callback)) \
   throw sql::SQLException{ \
     "You are trying to overwrithe WebAuthn callback with FIDO one. " \
     "FIDO authentication plugin and the corresponding callback type " \

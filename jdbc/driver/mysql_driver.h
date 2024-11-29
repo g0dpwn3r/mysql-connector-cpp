@@ -52,7 +52,6 @@ namespace NativeAPI
   class NativeDriverWrapper;
 }
 
-//class sql::mysql::NativeAPI::NativeDriverWrapper;
 
 class CPPCONN_PUBLIC_FUNC MySQL_Driver : public sql::Driver
 {
@@ -66,9 +65,10 @@ class CPPCONN_PUBLIC_FUNC MySQL_Driver : public sql::Driver
 #endif
 
   /*
-    Note: With current implementation `fido_callback` and `fido_callback_store`
-    are not really used and should be removed after deprecation of Fido
-    authentication plugin and when ABI can be changed.
+    Note: Currently we do not have a separate FIDO authentication plugin and
+    a callback for it. However, we keep `fido_callback` and
+    `fido_callback_store` members to not break ABI. The `fido_callback` is also
+    re-used as a flag in the logic of `setCallback()` methods (see there).
   */
 
   ::sql::Fido_Callback* fido_callback = nullptr;
@@ -77,9 +77,6 @@ class CPPCONN_PUBLIC_FUNC MySQL_Driver : public sql::Driver
   /*
     Callback function to be called by WebAuthn authentication plugin to notify
     the user.
-
-    Note: The `fido_callback` pointer is re-used as a flag to indicate if
-    the callback was set by a user and its type (WebAuthn vs. Fido).
   */
 
   std::function<void(SQLString)> webauthn_callback;
@@ -101,6 +98,20 @@ public:
   int getPatchVersion() override;
 
   const sql::SQLString & getName() override;
+
+  /*
+    We do not have a FIDO authentication plugin any more but for backward
+    compatibility user can still set a Fido_Callback and it will be used with
+    the WebAuthN plugin instead.
+
+    New code should use only WebAuthn_Callback -- there is no need to use
+    the deprecated Fido_Callback other than in old code that was not yet aware
+    of WebAuthN authentication.
+
+    An attempt to use both types of callbacks and overwrite earlier
+    WebAuthn_Callback with Fido_Callback will throw an error (it is still OK
+    to overwrite earlier Fido_Callback with WebAuthn_Callback though).
+  */
 
   void setCallBack(sql::Fido_Callback &cb) override;
   void setCallBack(sql::Fido_Callback &&cb) override;
