@@ -44,13 +44,26 @@ INCLUDE_DIRECTORIES("${CMAKE_BINARY_DIR}/include/jdbc/cppconn")
 set(MY_TARGET_LINK_LIBRARIES connector-jdbc)
 
 
-if(DEFINED GCC AND GCC VERSION_LESS 9)
+# Note: Some unit tests use std::filesystem part of the standard C++ library
+# and for some versions of the standard library its implementation is in
+# additional library stdc++fs.
 
-  # Note: Some unit tests use std::filesystem part of the standard library
-  # Before version 9 of gcc that requires linking with the additional library
+if(NOT WIN32)
 
-  list(APPEND MY_TARGET_LINK_LIBRARIES -lstdc++fs)
-  # message(STATUS "Added libstdc++fs for GCC version ${GCC}: ${MY_TARGET_LINK_LIBRARIES}")
+  set(check_src "${CMAKE_CURRENT_BINARY_DIR}/filesystem_chk.cc")
+  file(WRITE "${check_src}"
+    "#include <filesystem>\n"
+    "int main() { (void)std::filesystem::current_path(); }"
+  )
+
+  try_compile(COMPILE_RESULT
+    ${CMAKE_CURRENT_BINARY_DIR} "${check_src}"
+    # OUTPUT_VARIABLE build_log
+  )
+
+  if(NOT COMPILE_RESULT)
+    list(APPEND MY_TARGET_LINK_LIBRARIES -lstdc++fs)
+  endif()
 
 endif()
 
