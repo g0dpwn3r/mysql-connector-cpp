@@ -204,8 +204,11 @@ add_library(jdbc STATIC ${MYSQLCPPCONN_SOURCES})
 
 IF(WIN32)
   target_link_libraries(jdbc PRIVATE Dnsapi)
-ELSEIF(NOT CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
-  target_link_libraries(jdbc PRIVATE resolv)
+ELSE()
+  target_link_libraries(jdbc PRIVATE pthread)
+  IF(NOT CMAKE_SYSTEM_NAME MATCHES "FreeBSD")
+    target_link_libraries(jdbc PRIVATE resolv)
+  ENDIF()
 ENDIF()
 
 if (MYSQLCLIENT_STATIC_BINDING)
