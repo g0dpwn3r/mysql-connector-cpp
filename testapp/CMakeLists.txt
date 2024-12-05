@@ -66,7 +66,8 @@ if(WITH_SSL)
   message(STATUS "Using custom OpenSSL libraries at: ${WITH_SSL}")
 
   add_library(openssl INTERFACE)
-  target_link_directories(openssl INTERFACE "${WITH_SSL}")
+  # TODO: Is this path correct also on non-Win platforms?
+  target_link_directories(openssl INTERFACE "${WITH_SSL}/lib")
 
   if(WIN32)
     set(ssl_libs libssl libcrypto)
