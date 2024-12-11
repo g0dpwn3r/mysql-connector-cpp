@@ -414,7 +414,7 @@ public:
   virtual void num(double)        =0;
   virtual void yesno(bool)        =0;
 
-  virtual ~JSON_processor() {}
+  virtual ~JSON_processor() NOEXCEPT {}
 };
 
 typedef api::Doc_base<JSON_processor> JSON;

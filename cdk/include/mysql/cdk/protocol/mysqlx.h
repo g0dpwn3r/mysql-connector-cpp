@@ -799,7 +799,7 @@ public:
 
   Stream()
   {}
-  virtual ~Stream()
+  virtual ~Stream() NOEXCEPT
   {}
 
   virtual Op* read(const buffers&) =0;
@@ -919,7 +919,7 @@ class Processor_base
 {
 public:
 
-  virtual ~Processor_base(){}
+  virtual ~Processor_base() NOEXCEPT {}
 
   typedef protocol::mysqlx::byte        byte;
   typedef protocol::mysqlx::string      string;
@@ -1214,7 +1214,7 @@ public:
   virtual void target_path(const api::Doc_path&) = 0;
   virtual Expr_prc* update_op(update_op::value ) = 0;
 
-  virtual ~Update_processor() {}
+  virtual ~Update_processor() NOEXCEPT {}
 };
 
 class Update_spec
@@ -1282,7 +1282,7 @@ public:
     return *this;
   }
 
-  virtual ~Db_obj() {}
+  virtual ~Db_obj() NOEXCEPT {}
 
   virtual const string& get_name() const { return m_name; };
 

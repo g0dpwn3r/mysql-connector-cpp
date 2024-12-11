@@ -107,7 +107,7 @@ public:
 
   virtual Doc_prc*    doc() =0;
 
-  virtual ~Any_processor() {}
+  virtual ~Any_processor() NOEXCEPT {}
 };
 
 
@@ -156,7 +156,7 @@ public:
   */
   virtual Any_prc* key_val(const string &key) =0;
 
-  virtual ~Doc_processor() {}
+  virtual ~Doc_processor() NOEXCEPT {}
 };
 
 

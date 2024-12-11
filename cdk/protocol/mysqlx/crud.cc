@@ -708,9 +708,8 @@ public:
     , m_conv(conv)
   {}
 
-  ~Update_builder()
-  {
-  }
+  ~Update_builder() NOEXCEPT
+  {}
 
   virtual void target_name(const string &name)
   {

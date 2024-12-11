@@ -100,7 +100,7 @@ struct Executable_if
 
   virtual Executable_if *clone() const = 0;
 
-  virtual ~Executable_if() {}
+  virtual ~Executable_if() NOEXCEPT {}
 };
 
 

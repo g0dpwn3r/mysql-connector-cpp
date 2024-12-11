@@ -162,7 +162,7 @@ public:
 protected:
 
   Protocol_impl(Protocol::Stream*, Protocol_side);
-  virtual ~Protocol_impl();
+  virtual ~Protocol_impl() NOEXCEPT;
 
 public:
 
@@ -973,12 +973,14 @@ public:
     }
   }
 
-  ~Msg_builder()
+  ~Msg_builder() NOEXCEPT
   {
     if (m_stmt_id != 0)
+    try
     {
       Prepare_traits<T>::release(m_prepare);
     }
+    catch (...) {}
   }
 
 

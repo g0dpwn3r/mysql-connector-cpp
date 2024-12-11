@@ -144,7 +144,7 @@ const error_category& posix_error_category();
   struct error_category_##EC : public cdk::foundation::error_category_base  \
   {                                                                       \
     error_category_##EC() {}                                              \
-    const char* name() const throw() { return "cdk-" #EC; }               \
+    const char* name() const NOEXCEPT { return "cdk-" #EC; }               \
     std::string message(int code) const                                   \
     { CDK_ERROR_SWITCH(NS, EC, code); }                                   \
     cdk::foundation::error_condition do_default_error_condition(int) const;  \

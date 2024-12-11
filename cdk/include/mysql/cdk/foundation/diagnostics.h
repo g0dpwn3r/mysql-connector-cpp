@@ -223,7 +223,7 @@ public:
     : m_entries(NULL), m_level(Severity::ERROR)
   {}
 
-  virtual ~Diagnostic_iterator() {}
+  virtual ~Diagnostic_iterator() NOEXCEPT {}
 
   const Entry& entry()
   {
@@ -265,8 +265,10 @@ public:
     : m_it(m_entries, Severity::ERROR)
   {}
 
-  virtual ~Diagnostic_arena()
-  { clear(); }
+  virtual ~Diagnostic_arena() NOEXCEPT
+  {
+    try { clear(); } catch (...) {}
+  }
 
 
   /*

@@ -371,7 +371,7 @@ public:
 
   Codec(const Format_info &fi) : Codec_base<TYPE_FLOAT>(fi) {}
 
-  virtual ~Codec() {}
+  virtual ~Codec() NOEXCEPT {}
 
   virtual size_t from_bytes(bytes buf, float &val);
   virtual size_t from_bytes(bytes buf, double &val);

@@ -370,7 +370,7 @@ mysqlx::string Session_detail::get_default_schema_name()
 */
 
 
-Query_src::~Query_src()
+Query_src::~Query_src() NOEXCEPT
 {
   delete m_res;
 }

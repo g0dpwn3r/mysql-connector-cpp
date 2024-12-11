@@ -121,7 +121,7 @@ public:
     operator=(std::move(other));
   }
 
-  virtual ~Executable() {}
+  virtual ~Executable() NOEXCEPT {}
 
 
   Executable& operator=(const Executable &other)

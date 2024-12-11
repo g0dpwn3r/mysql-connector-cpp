@@ -137,7 +137,7 @@ size_t Compression_zlib::uncompress(byte *dst,
 }
 
 
-Compression_zlib::~Compression_zlib()
+Compression_zlib::~Compression_zlib() NOEXCEPT
 {
   if (m_zlib_inited)
   {
@@ -256,7 +256,7 @@ size_t Compression_lz4::uncompress(byte *dst,
 }
 
 
-Compression_lz4::~Compression_lz4()
+Compression_lz4::~Compression_lz4() NOEXCEPT
 {
   if (m_dctx)
     LZ4F_freeDecompressionContext(m_dctx);
@@ -338,7 +338,7 @@ size_t Compression_zstd::uncompress(byte *dst,
 }
 
 
-Compression_zstd::~Compression_zstd()
+Compression_zstd::~Compression_zstd() NOEXCEPT
 {
   if (m_u_zstd)
     ZSTD_freeDStream(m_u_zstd);
@@ -456,7 +456,7 @@ void Protocol_compression::set_compression_type
 }
 
 
-Protocol_compression::~Protocol_compression()
+Protocol_compression::~Protocol_compression() NOEXCEPT
 {
   if (m_c_out_buf)
     free(m_c_out_buf);

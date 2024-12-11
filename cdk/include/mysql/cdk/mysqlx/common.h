@@ -95,13 +95,13 @@ public:
 
   typedef protocol::mysqlx::sql_state_t sql_state_t;
 
-  Server_error(unsigned num, sql_state_t, const string& desc = string()) throw()
+  Server_error(unsigned num, sql_state_t, const string& desc = string()) NOEXCEPT
     : Error_base(NULL, server_error(static_cast<int>(num)), desc)
   {
     assert(num < (unsigned)std::numeric_limits<int>::max());
   }
 
-  virtual ~Server_error() throw() {}
+  virtual ~Server_error() NOEXCEPT {}
 
 };
 
@@ -115,7 +115,7 @@ public:
 
   Server_prepare_error(
     unsigned num, sql_state_t sql_state, const string& desc = string()
-  ) throw()
+  ) NOEXCEPT
     : Error_base(NULL, num, sql_state , desc)
   {}
 };
@@ -128,7 +128,7 @@ public:
 
   typedef protocol::mysqlx::sql_state_t sql_state_t;
 
-  Server_expectation_error(const string& desc) throw()
+  Server_expectation_error(const string& desc) NOEXCEPT
     : Error_base(NULL, 5168, sql_state_t("HY000") , desc)
   {}
 };

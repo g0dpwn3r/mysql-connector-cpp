@@ -446,12 +446,21 @@ public:
     assert(m_session);
   }
 
-  virtual ~Stmt_op()
+  virtual ~Stmt_op() NOEXCEPT
   {
-    discard();
-    wait();
-    if (m_session)
-      m_session->deregister_stmt(this);
+    try
+    {
+      discard();
+      wait();
+    }
+    catch (...) {}
+
+    try
+    {
+      if (m_session)
+        m_session->deregister_stmt(this);
+    }
+    catch (...) {}
   }
 
   Session& get_session()
@@ -812,7 +821,7 @@ protected:
 public:
 
   Cursor(const std::shared_ptr<Stmt_op> &reply);
-  ~Cursor();
+  ~Cursor() NOEXCEPT;
 
   void get_rows(mysqlx::Row_processor& rp);
   void get_rows(mysqlx::Row_processor& rp, row_count_t limit);

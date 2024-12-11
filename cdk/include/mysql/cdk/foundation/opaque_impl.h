@@ -171,7 +171,7 @@ class opaque_impl
 
 protected:
 
-  virtual ~opaque_impl();
+  virtual ~opaque_impl() NOEXCEPT;
 
   // Default constructor: uses default constructor of internal implementation type.
 

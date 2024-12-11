@@ -125,10 +125,15 @@ public:
 
   }
 
-  ~Expectation()
+  ~Expectation() NOEXCEPT
   {
-    Base::discard();
-    Base::wait();
+    try
+    {
+      Base::discard();
+      Base::wait();
+    }
+    catch (...)
+    {}
   }
 
 
@@ -791,7 +796,7 @@ class Order_prc_converter
 
 public:
 
-  virtual ~Order_prc_converter() {}
+  virtual ~Order_prc_converter() NOEXCEPT {}
 
   Expr_prc* sort_key(Sort_direction::value dir)
   {
@@ -855,7 +860,7 @@ protected:
   {}
 
 
-  virtual ~Cmd_Select()
+  virtual ~Cmd_Select() NOEXCEPT
   {}
 
 
@@ -989,7 +994,7 @@ class Table_proj_prc_converter
 
 public:
 
-  virtual ~Table_proj_prc_converter() {}
+  virtual ~Table_proj_prc_converter() NOEXCEPT {}
 };
 
 
@@ -1125,7 +1130,7 @@ struct String_to_col_prc_converter
     m_proc->name(col);
   }
 
-  virtual ~String_to_col_prc_converter()
+  virtual ~String_to_col_prc_converter() NOEXCEPT
   {}
 };
 
@@ -1290,7 +1295,7 @@ public:
     view.process(*this);
   }
 
-  ~Cmd_ViewCrud()
+  ~Cmd_ViewCrud() NOEXCEPT
   {
     delete m_find;
   }
@@ -1379,7 +1384,7 @@ public:
     bool m_has_schema;
     string m_schema_name;
 
-    virtual ~Table() {}
+    virtual ~Table() NOEXCEPT {}
 
     //DB_OBJ
     const string& get_name() const
@@ -1396,7 +1401,7 @@ public:
 
 public:
 
-  virtual ~Update_prc_converter() {}
+  virtual ~Update_prc_converter() NOEXCEPT {}
 
   void set_data_model(cdk::protocol::mysqlx::Data_model dm)
   {

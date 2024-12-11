@@ -71,7 +71,7 @@ class String_codec
 {
 public:
 
-  virtual ~String_codec() {}
+  virtual ~String_codec() NOEXCEPT {}
 
   //virtual size_t measure(const string&) =0;
   virtual size_t from_bytes(bytes, string&) =0;
@@ -165,7 +165,7 @@ class Number_codec
 {
 public:
 
-  virtual ~Number_codec() {}
+  virtual ~Number_codec() NOEXCEPT {}
 
   virtual size_t from_bytes(bytes buf, int8_t &val)  =0;
   virtual size_t from_bytes(bytes buf, int16_t &val) =0;

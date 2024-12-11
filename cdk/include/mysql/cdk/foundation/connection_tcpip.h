@@ -107,7 +107,7 @@ public:
     : Error_base(NULL, io_error(num))
   {}
 
-  virtual ~IO_error() throw() {}
+  virtual ~IO_error() NOEXCEPT {}
 
 };
 

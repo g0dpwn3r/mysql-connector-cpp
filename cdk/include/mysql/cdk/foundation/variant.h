@@ -356,9 +356,9 @@ public:
     return *this;
   }
 
-  ~variant()
+  ~variant() NOEXCEPT
   {
-    Base::destroy();
+    try { Base::destroy(); } catch (...) {}
   }
 
   operator bool()

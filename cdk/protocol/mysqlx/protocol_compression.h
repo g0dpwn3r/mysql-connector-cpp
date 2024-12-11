@@ -67,7 +67,7 @@ class Compression_algorithm
                             size_t compressed_size,
                             size_t &bytes_consumed) = 0;
 
-  virtual ~Compression_algorithm() {}
+  virtual ~Compression_algorithm() NOEXCEPT {}
 };
 
 
@@ -88,7 +88,7 @@ class Compression_zlib : public Compression_algorithm
   size_t compress(byte *src, size_t len) override;
   size_t uncompress(byte *dst, size_t dest_size, size_t compressed_size,
                     size_t &bytes_consumed) override;
-  ~Compression_zlib();
+  ~Compression_zlib() NOEXCEPT;
 };
 
 
@@ -109,7 +109,7 @@ class Compression_lz4 : public Compression_algorithm
   size_t compress(byte *src, size_t len) override;
   size_t uncompress(byte *dst, size_t dest_size, size_t compressed_size,
                     size_t &bytes_consumed) override;
-  ~Compression_lz4();
+  ~Compression_lz4() NOEXCEPT;
 };
 
 
@@ -129,7 +129,7 @@ class Compression_zstd : public Compression_algorithm
   size_t compress(byte *src, size_t len) override;
   size_t uncompress(byte *dst, size_t dest_size, size_t compressed_size,
                     size_t &bytes_consumed) override;
-  ~Compression_zstd();
+  ~Compression_zstd() NOEXCEPT;
 };
 
 
@@ -159,7 +159,7 @@ class Protocol_compression
 
   Protocol_compression();
 
-  ~Protocol_compression();
+  ~Protocol_compression() NOEXCEPT;
 
   /*
     Returns pointer to internal buffer for compressed input

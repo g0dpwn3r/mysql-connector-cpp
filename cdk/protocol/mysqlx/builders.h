@@ -285,7 +285,7 @@ struct Builder_base
     m_args_conv = conv;
   }
 
-  virtual ~Builder_base() {}
+  virtual ~Builder_base() NOEXCEPT {}
 };
 
 
@@ -1148,7 +1148,7 @@ class Placeholder_conv_imp
   unsigned m_offset = 0;
 public:
 
-  virtual ~Placeholder_conv_imp() {}
+  virtual ~Placeholder_conv_imp() NOEXCEPT {}
 
   void clear()
   {

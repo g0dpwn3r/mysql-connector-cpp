@@ -44,6 +44,8 @@
   kept in the common/ folder, either as headers or source files.
 */
 
+#define NOEXCEPT noexcept
+
 #include "common_constants.h"
 #include "common/api.h"
 #include "common/error.h"

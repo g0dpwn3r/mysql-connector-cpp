@@ -660,7 +660,7 @@ void Session::authenticate(const Options &options, bool  secure_conn)
 }
 
 
-Session::~Session()
+Session::~Session() NOEXCEPT
 {
   //TODO: add timeout to close session!
   try
@@ -668,10 +668,7 @@ Session::~Session()
     close();
   }
   catch (...)
-  {
-    // Something went wrong - do not try to use this session again.
-    m_isvalid = false;
-  }
+  {}
 }
 
 

@@ -643,7 +643,7 @@ Socket connect(const char *host_name, unsigned short port,
   struct AddrInfoGuard
   {
     addrinfo* list;
-    ~AddrInfoGuard() { freeaddrinfo(list); }
+    ~AddrInfoGuard() NOEXCEPT { freeaddrinfo(list); }
   }
   guard = { host_list };
 
@@ -915,6 +915,13 @@ void recv(Socket socket, byte *buffer, size_t buffer_size)
     return;
 
   size_t bytes_received = 0;
+
+  /*
+    Note: In presence of timeouts recv_some() can return 0 which would lead
+    to an infinite loop here! See also bug#37278716.
+
+    A solution would be to throw error if timeout was hit?
+  */
 
   while (bytes_received != buffer_size)
     bytes_received += recv_some(socket, buffer + bytes_received, buffer_size - bytes_received, true);

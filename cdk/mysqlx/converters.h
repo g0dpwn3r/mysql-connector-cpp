@@ -243,7 +243,7 @@ struct Expr_prc_converter_base
   //using Base::reset;
   //using Base::m_proc;
 
-  virtual ~Expr_prc_converter_base() {}
+  virtual ~Expr_prc_converter_base() NOEXCEPT {}
 
   Scalar_prc_converter m_scalar_conv;
   Args_prc* get_args_converter(Args_prc_to*);

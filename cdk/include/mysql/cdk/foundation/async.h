@@ -50,7 +50,7 @@ class Async_op_base : nocopy
 {
 public:
 
-  virtual ~Async_op_base() {}
+  virtual ~Async_op_base() NOEXCEPT {}
 
   virtual bool is_completed() const =0;
 

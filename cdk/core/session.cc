@@ -53,7 +53,7 @@ struct Session_builder
 
   struct ReportStatus
   {
-    //False if not able to connect, true if all is good.
+    // False if not able to connect, true if all is good.
     option_t m_status = false;
     Session_builder::ep_filter_t m_filter;
     size_t m_id;
@@ -63,6 +63,12 @@ struct Session_builder
       , m_id(id)
     {}
 
+    /*
+      Note: The only reason for ReportStatus object is to use RAII to invoke
+      m_filter() on destruction to report session creation status. So this
+      is part of logic of methods that use such object and as such is allowed
+      to throw errors from the dtor.
+    */
 
     ~ReportStatus()
     {
@@ -481,7 +487,7 @@ Session::Session(ds::Unix_socket &ds, const ds::Unix_socket::Options &options)
 #endif //#ifndef WIN32
 
 
-Session::~Session()
+Session::~Session() NOEXCEPT
 {
   delete m_session;
   delete m_connection;

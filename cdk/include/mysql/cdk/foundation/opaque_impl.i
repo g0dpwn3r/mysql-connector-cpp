@@ -129,7 +129,7 @@ namespace foundation {
   namespace cdk {                                         \
   namespace foundation {                                  \
     template<>                                            \
-    opaque_impl<X>::~opaque_impl() { delete m_impl; }     \
+    opaque_impl<X>::~opaque_impl() NOEXCEPT { delete m_impl; }     \
   }}  // cdk::foundation
 
 #define IMPL_DEFAULT(X) \

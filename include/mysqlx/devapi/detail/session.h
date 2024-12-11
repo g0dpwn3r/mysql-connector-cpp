@@ -85,7 +85,7 @@ protected:
     : m_sess(sess), m_name(name)
   {}
 
-  virtual ~Db_obj_base()
+  virtual ~Db_obj_base() NOEXCEPT
   {}
 };
 
@@ -144,7 +144,7 @@ public:
 
   Query_src(const Query_src&) = delete;
 
-  virtual ~Query_src();
+  virtual ~Query_src() NOEXCEPT;
 
   virtual void  iterator_start()
   {
@@ -247,6 +247,9 @@ using SQL_statement_cmd = Executable<SqlResult, SQL_statement>;
 struct SQL_statement
   : public Bind_placeholders< SQL_statement_cmd >
 {
+  ~SQL_statement() NOEXCEPT
+  {}
+
   SQL_statement(Session *sess, const string &query)
   {
     assert(sess);
@@ -372,7 +375,7 @@ protected:
   Session_detail(common::Settings_impl&);
   Session_detail(common::Shared_session_pool&);
 
-  virtual ~Session_detail()
+  virtual ~Session_detail() NOEXCEPT
   {
     try {
       if (m_impl)

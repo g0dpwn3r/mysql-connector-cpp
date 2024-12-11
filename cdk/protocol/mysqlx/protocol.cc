@@ -163,7 +163,7 @@ Protocol_impl::Protocol_impl(Protocol::Stream *str, Protocol_side side)
 
 }
 
-Protocol_impl::~Protocol_impl()
+Protocol_impl::~Protocol_impl() NOEXCEPT
 {
   free(m_rd_buf);
   free(m_wr_buf);

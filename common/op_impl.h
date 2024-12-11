@@ -141,11 +141,15 @@ public:
 
   virtual ~Op_base() override
   {
-    // Let's aquire lock so that any remaingin replies are consumed on ~Reply
-    // and this way avoid race conditions with Client::close()
-    auto lock = m_sess->lock();
-    release_stmt_id();
-    m_reply.reset();
+    try {
+      // Let's aquire lock so that any remaingin replies are consumed on ~Reply
+      // and this way avoid race conditions with Client::close()
+      auto lock = m_sess->lock();
+      release_stmt_id();
+      m_reply.reset();
+    }
+    catch (...)
+    {}
   }
 
   cdk::Session& get_cdk_session()

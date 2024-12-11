@@ -52,7 +52,7 @@ namespace ds {
 
 struct Attr_processor
 {
-  virtual ~Attr_processor() {}
+  virtual ~Attr_processor() NOEXCEPT {}
   virtual void attr(const string &key, const string &val)=0;
 };
 
@@ -90,7 +90,7 @@ public:
     }
   }
 
-  virtual ~Options() {}
+  virtual ~Options() NOEXCEPT {}
 
   virtual const string& user() const { return m_usr; }
   virtual const std::string* password() const
@@ -171,7 +171,7 @@ public:
       throw_error("invalid empty host name");
   }
 
-  virtual ~TCPIP() {}
+  virtual ~TCPIP() NOEXCEPT {}
 
   virtual unsigned short port() const { return m_port; }
   virtual const std::string& host() const { return m_host; }
@@ -346,7 +346,7 @@ public:
       throw_error("invalid empty socket path");
   }
 
-  virtual ~Unix_socket() {}
+  virtual ~Unix_socket() NOEXCEPT {}
 
   virtual const std::string& path() const { return m_path; }
 };
@@ -386,7 +386,7 @@ public:
   : cdk::ds::mysqlx::TCPIP(_host, _port)
   {}
 
-  virtual ~TCPIP() {}
+  virtual ~TCPIP() NOEXCEPT {}
 
   typedef ds::Options<Protocol_options> Options;
 };

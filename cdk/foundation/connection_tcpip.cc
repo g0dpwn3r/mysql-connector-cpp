@@ -138,7 +138,7 @@ class Socket_system_initializer
     detail::initialize_socket_system();
   }
 
-  ~Socket_system_initializer()
+  ~Socket_system_initializer() NOEXCEPT
   {
     try
     {

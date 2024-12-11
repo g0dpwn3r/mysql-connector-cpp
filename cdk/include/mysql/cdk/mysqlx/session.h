@@ -148,7 +148,7 @@ class SessionAuth
 public:
 
   SessionAuth(Session&, const char *method);
-  virtual ~SessionAuth() {}
+  virtual ~SessionAuth() NOEXCEPT {}
 
   /*
     Authentication data to be sent in the AuthenticateStart message,
@@ -294,7 +294,7 @@ public:
   */
   Compression_type::value negotiate_compression(const std::vector<compression_algorithm_t>& algorithms);
 
-  virtual ~Session();
+  virtual ~Session() NOEXCEPT;
 
   /*
     Check if given session is valid. Function is_valid() performs

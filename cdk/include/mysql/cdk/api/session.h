@@ -44,7 +44,7 @@ class Session
 {
 public:
 
-  virtual ~Session() {}
+  virtual ~Session() NOEXCEPT {}
 
   // Check if given session is valid. Function is_valid() performs a lightweight, local check while
   // check_valid() might communicate with the data store to perform this check.

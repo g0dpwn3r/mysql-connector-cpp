@@ -110,9 +110,9 @@ public:
     return detail::poll_one(m_sock, detail::POLL_MODE_WRITE, false) > 0;
   }
 
-  virtual ~Impl()
+  virtual ~Impl() NOEXCEPT
   {
-    close();
+    try { close(); } catch (...) {}
   }
 
   virtual void do_connect() =0;

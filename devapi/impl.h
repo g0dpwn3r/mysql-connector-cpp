@@ -369,7 +369,7 @@ class DbDoc::Impl
   friend Value::Access;
 
   public:
-  virtual ~Impl(){}
+  virtual ~Impl() NOEXCEPT {}
 };
 
 

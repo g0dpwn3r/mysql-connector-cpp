@@ -94,7 +94,7 @@ protected:
   Result_detail& operator=(Result_detail&&);
 
   Result_detail() = default;
-  virtual ~Result_detail();
+  virtual ~Result_detail() NOEXCEPT;
 
   Impl& get_impl();
 

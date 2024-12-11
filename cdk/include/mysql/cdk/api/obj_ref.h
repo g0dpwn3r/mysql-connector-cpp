@@ -47,7 +47,7 @@ class Ref_base
 {
 public:
 
-  virtual ~Ref_base() {}
+  virtual ~Ref_base() NOEXCEPT {}
 
   virtual const string name() const =0;
   virtual const string orig_name() const { return name(); }

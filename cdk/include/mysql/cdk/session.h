@@ -78,7 +78,7 @@ public:
           const ds::Unix_socket::Options &options = ds::Unix_socket::Options());
 #endif //_WIN32
 
-  ~Session();
+  ~Session() NOEXCEPT;
 
   // Core Session operations.
 

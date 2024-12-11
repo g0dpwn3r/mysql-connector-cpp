@@ -265,12 +265,12 @@ public:
     , m_options(options)
   {}
 
-  ~connection_TLS_impl()
+  ~connection_TLS_impl() NOEXCEPT
   {
     if (m_tls)
     {
       /*
-      Server is expecting a SSL quiet shutdown.
+        Server is expecting a SSL quiet shutdown.
       */
       SSL_set_quiet_shutdown(m_tls, 1);
       SSL_shutdown(m_tls);
@@ -697,7 +697,7 @@ public:
     : m_X509(obj)
   {}
 
-  ~safe_X509()
+  ~safe_X509() NOEXCEPT
   {
     if (std::is_same<X, X509>::value)
     {

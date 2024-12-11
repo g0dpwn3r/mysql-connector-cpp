@@ -552,9 +552,9 @@ Cursor::Cursor(const std::shared_ptr<Stmt_op> &reply)
 }
 
 
-Cursor::~Cursor()
+Cursor::~Cursor() NOEXCEPT
 {
-  close();
+  try { close(); } catch (...) {}
 }
 
 

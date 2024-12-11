@@ -244,7 +244,7 @@ public:
     DOUBLE_ASTERISK = 5,
   };
 
-  virtual ~Doc_path() {}
+  virtual ~Doc_path() NOEXCEPT {}
 
   // The "$" path which denotes the whole document.
   virtual bool is_whole_document() const = 0;

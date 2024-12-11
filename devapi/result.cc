@@ -488,7 +488,7 @@ Result_detail::Result_detail(Result_init &init)
 }
 
 
-Result_detail::~Result_detail()
+Result_detail::~Result_detail() NOEXCEPT
 {
   try {
     if (m_owns_impl)
