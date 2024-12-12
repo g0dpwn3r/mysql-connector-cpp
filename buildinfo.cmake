@@ -42,10 +42,10 @@ function(generate_cmake_config)
     )
 
     install(
-      FILES 
+      FILES
         "${CMAKE_BINARY_DIR}/mysql-concpp${suffix}.cmake"
       DESTINATION .
-      COMPONENT Readme
+      COMPONENT DevCommon
     )
 
   endforeach()
