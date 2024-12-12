@@ -215,11 +215,14 @@ mv -v %{buildroot}%{_libdir}/plugin/*  %{buildroot}%{plugin_dir}
 rm -rf %{buildroot}%{_libdir}/{plugin,private}
 
 
-%post -p /sbin/ldconfig
+%post
+/sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun
+/sbin/ldconfig
 
-%post jdbc -p /sbin/ldconfig
+%post jdbc
+/sbin/ldconfig
 
 %postun jdbc
 /sbin/ldconfig
