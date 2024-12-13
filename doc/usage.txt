@@ -6,7 +6,7 @@ uses Connector/C++ it is enough to link that target with the `mysql::concpp`
 target defined after loading the `mysql-concpp` module into the project, as
 in this example:
 ~~~~~~
-  find_module(mysql-concpp REQUIRED)
+  find_package(mysql-concpp REQUIRED)
 
   add_executable(my-target ...)
   target_link_libraries(my-target mysql::concpp)
@@ -14,14 +14,14 @@ in this example:
 This ensures correct compiler and linker flags when building `my-target`
 so that connector public headers, the libraries and their dependencies are
 found when compiling and linking the target. See the CMake documentation
-for more information on `find_module()` command and on using CMake modules.
+for more information on `find_package()` command and on using CMake modules.
 
 We focus here on the scenario where Connector/C++ is installed from a package
 published by MySQL. There are two variants of this scenario. Either
 the connector is installed system-wide via package manager such as RPM or DEB,
 or it is installed locally from TGZ or ZIP package. In case of system-wide
 installation connector components are installed to default locations and things
-are expected to work out-of-the-box. In this case `find_module(mysql-concpp)`
+are expected to work out-of-the-box. In this case `find_package(mysql-concpp)`
 command should work without any further configuration.
 
 In case of local installation you need to tell CMake where to look for
@@ -29,7 +29,7 @@ the `mysql-concpp` module. This can be done by setting the `mysql-concpp_DIR`
 variable to the top-level Connector/C++ install location:
 ~~~~~~
   set(mysql-concpp_DIR "/path/to/concpp/install")
-  find_module(mysql-concpp)
+  find_package(mysql-concpp)
 ~~~~~~
 (Alternatively the variable can be set when invoking `cmake` using
 `-Dmysql-concpp_DIR=/path/to/concpp/install` option).
@@ -193,7 +193,7 @@ When loading the `mysql-concpp` module a "debug" component can be required
 so that cmake will report error if debug variants of connector libraries
 are not found:
 ~~~~~~
-  find_module(mysql-concpp REQUIRE debug)
+  find_package(mysql-concpp REQUIRE debug)
 ~~~~~~
 Regardless of whether the "debug" component was required or not, the module
 will set variable `MYSQL_CONCPP_DEBUG_FOUND` to true if debug libraries were
@@ -218,7 +218,7 @@ For example:
   find_package(mysql-concpp)
 ~~~~
 Note that `mysql::openssl` target must be defined before invoking
-`find_module(mysql-concpp)` in order to replace the default OpenSSL instance
+`find_package(mysql-concpp)` in order to replace the default OpenSSL instance
 used by the module.
 
 
