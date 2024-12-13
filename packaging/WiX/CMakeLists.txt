@@ -514,32 +514,20 @@ function(make_wix_identifier STR VAR)
   set(${VAR} "${STR}.${out}" PARENT_SCOPE)
 endfunction()
 
+
 #
 #  Generate UUIDs
 #
 
-find_program(UUIDGEN_COMMAND uuidgen)
-
-if(NOT UUIDGEN_COMMAND)
-  message(FATAL_ERROR "Could not find uuidgen executable")
-endif()
-
 function(generate_guid VAR)
 
-  EXECUTE_PROCESS(
-    COMMAND ${UUIDGEN_COMMAND} -c
-    RESULT_VARIABLE res
-    OUTPUT_VARIABLE guid
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-  )
-
-  if(res)
-    message(FATAL_ERROR "Could not generate UUID: ${res}")
-  endif()
-
+  string(RANDOM x)
+  string(UUID guid NAMESPACE "96122528-4F58-40F8-AB22-96F9853460F8" NAME "${x}" TYPE MD5 UPPER)
+  # message(STATUS "generated guid: ${guid}")
   set(${VAR} ${guid} PARENT_SCOPE)
 
 endfunction()
+
 
 #
 # Convert path into a list
