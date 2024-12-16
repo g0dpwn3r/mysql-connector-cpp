@@ -215,7 +215,7 @@ mv -v %{buildroot}%{_libdir}/plugin/*  %{buildroot}%{plugin_dir}
 rm -rf %{buildroot}%{_libdir}/{plugin,private}
 
 %pretrans devel
-test -L /usr/include/mysql-cppconn && rm -f /usr/include/mysql-cppconn
+test -L /usr/include/mysql-cppconn && rm -f /usr/include/mysql-cppconn || true
 
 %post
 /sbin/ldconfig
