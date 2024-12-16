@@ -190,6 +190,7 @@ cpack_add_component_group(main)
 cpack_add_component_group(tests)
 cpack_add_component_group(debug)
 
+cpack_add_component(DevCommon GROUP main)
 cpack_add_component(XDevAPIDev GROUP main)
 cpack_add_component(XDevAPIDll GROUP main)
 cpack_add_component(JDBCDev GROUP main)
