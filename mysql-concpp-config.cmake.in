@@ -46,8 +46,9 @@
 # Also, the following variables are set:
 #
 # - Xxx_FOUND
-# - Xxx_DEBUG_FOUND, Xxx_debug_FOUND -- (1)
-# - Xxx_RELEASE_FOUND, Xxx_release_FOUND -- (1)
+# - Xxx_JDBC_FOUND, Xxx_jdbc_FOUND -- (1a)
+# - Xxx_DEBUG_FOUND, Xxx_debug_FOUND -- (1b)
+# - Xxx_RELEASE_FOUND, Xxx_release_FOUND -- (1b)
 # - Xxx_VERSION, Xxx_VERSION_CC
 # - Xxx_ROOT_DIR -- (2)
 # - Xxx_RUNTIME_LIBRARY_DIRS, Xxx_RUNTIME_LIBRARY_DIR -- (2,3)
@@ -58,7 +59,11 @@
 # In these variable names Xxx is either `MYSQL_CONCPP` or `mysql-concpp`,
 # CC is version component: one of `MAJOR`, `MINOR` or `PATCH`.
 #
-# Note (1): These are set to true if debug/release libraries are available
+# Note (1a): Set to true if the classic JDBC connector libraries were found and
+# the -jdbc targets are defined. It must be the case if `REQUIRE jdbc` clause
+# was used in the cmake `find_package()` command.
+#
+# Note (1b): These are set to true if debug/release libraries are available
 # (see below).
 #
 # Note (2): Set only in case of a monolithic install (TGZ, ZIP, MSI).
@@ -357,7 +362,11 @@ macro(main)
       add_library(mysql::concpp${suffix} ALIAS mysql::concpp-xdevapi${suffix})
     endif()
 
-  endforeach()
+    if(TARGET mysql::concpp-jdbc${suffix})
+      set(MYSQL_CONCPP_JDBC_FOUND 1)
+    endif()
+
+endforeach()
 
 
   # Build the NOT_FOUND message.
@@ -388,6 +397,7 @@ macro(main)
   # Note: The _FOUND variable name expected by FPHSA for component CCC
   # is mysql-concpp_CCC_FOUND
 
+  set(mysql-concpp_jdbc_FOUND ${MYSQL_CONCPP_JDBC_FOUND})
   set(mysql-concpp_debug_FOUND ${MYSQL_CONCPP_DEBUG_FOUND})
   set(mysql-concpp_release_FOUND ${MYSQL_CONCPP_RELEASE_FOUND})
 
@@ -403,6 +413,7 @@ macro(main)
 
   # Set alternative variables
 
+  set(MYSQL_CONCPP_jdbc_FOUND ${MYSQL_CONCPP_JDBC_FOUND})
   set(MYSQL_CONCPP_debug_FOUND ${MYSQL_CONCPP_DEBUG_FOUND})
   set(MYSQL_CONCPP_release_FOUND ${MYSQL_CONCPP_RELEASE_FOUND})
 
@@ -412,6 +423,7 @@ macro(main)
     RUNTIME_LIBRARY_DIR_DEBUG RUNTIME_LIBRARY_DIRS_DEBUG
     RUNTIME_LIBRARY_DIR_RELEASE RUNTIME_LIBRARY_DIRS_RELEASE
     DEBUG_FOUND debug_FOUND RELEASE_FOUND release_FOUND
+    JDBC_FOUND jdbc_FOUND
   )
 
     if(NOT DEFINED MYSQL_CONCPP_${var})
