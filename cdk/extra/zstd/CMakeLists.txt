@@ -15,6 +15,10 @@ include(platform)
 
 enable_pic()
 
+if(WERROR)
+  add_compile_options(${WERROR})
+endif()
+
 
 SET(ZSTD_LIB_DIR
   "${PROJECT_SOURCE_DIR}/lib")

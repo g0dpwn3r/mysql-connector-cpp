@@ -9,6 +9,9 @@ set(VERSION "1.3.1")
 project(zlib VERSION ${VERSION} LANGUAGES C)
 
 option(ZLIB_BUILD_EXAMPLES "Enable Zlib Examples" ON)
+if(WERROR)
+  add_compile_options(${WERROR})
+endif()
 
 IF(DISABLE_THESE_LINES)
 set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Installation directory for executables")

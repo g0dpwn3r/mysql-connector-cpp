@@ -34,6 +34,10 @@ include(platform)
 
 enable_pic()
 
+if(WERROR)
+  add_compile_options(${WERROR})
+endif()
+
 add_library(lz4 STATIC
     lib/lz4.c
     lib/lz4frame.c

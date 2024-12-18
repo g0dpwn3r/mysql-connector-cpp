@@ -60,6 +60,7 @@ set(EXT_FWD
   CMAKE_SYSTEM_PROCESSOR
   CMAKE_C_COMPILER CMAKE_CXX_COMPILER
   MSVC
+  WERROR
 )
 
 set(EXT_DIR ${CMAKE_CURRENT_LIST_DIR}/ext CACHE INTERNAL "external project utils location")
@@ -129,7 +130,7 @@ function(add_ext NAME HEADER)
     "${EXT_LIB} library name"
   )
 
-  
+
   #show_config_options()
 
   # Handle non-path value of WITH_X option

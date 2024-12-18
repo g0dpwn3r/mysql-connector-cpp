@@ -73,6 +73,10 @@ SET(PROTO_SRC_DIR  "${PROJECT_SOURCE_DIR}/protobuf-3.19.6")
 enable_pic()
 enable_cxx17()
 
+if(WERROR)
+  add_compile_options(${WERROR})
+endif()
+
 # -O3 using GCC on SPARC leds to segfault on protoc
 if(SPARC AND GCC)
   foreach(LANG C CXX)
