@@ -297,7 +297,6 @@ function(main)
 
   if(MYSQL_LIB_STATIC)
     target_link_libraries(mysql-client-if INTERFACE MySQL::client-static)
-    target_link_libraries(mysql-client-if INTERFACE OpenSSL::SSL)
   else()
     target_link_libraries(mysql-client-if INTERFACE MySQL::client-shared)
   endif()
@@ -379,7 +378,7 @@ function(main)
 
     #
     # If external dependencies were found, add them to the static target
-    # as any code that liks to static library should also link with the
+    # as any code that links to static library should also link with the
     # external dependencies.
     #
 
@@ -531,7 +530,8 @@ function(use_mysql_config)
     # option.
 
     if(NOT lib MATCHES
-        "(mysqlclient|libmysql|^stdc|^gcc|^CrunG3|^c$|^statomic|^ssl|^crypto)"
+        "(mysqlclient|libmysql|^stdc|^gcc|^CrunG3|^c$|^statomic)"
+        #|^ssl|^crypto)"
       )
 
       list(APPEND MYSQL_EXTERNAL_DEPENDENCIES ${lib})

@@ -266,25 +266,12 @@ add_version_info(connector-jdbc
   "Implements MySQL Connector/C++ legacy JDBC API."
 )
 
+# Note: The MySQL::client target works (and is needed) both when linking
+# to the MySQL client library dynamically and statically. In the latter case
+# it brings additional linker options that are required (e.g. to resolve
+# dependencies of the client library code).
 
-
-# Note: When connector links statically to the client library, targets using
-# the connector must be able to find dependencies of the client library, such
-# as openssl libs. The MYSQL_EXTERNAL_SEARCHPATH variable set by DepFindMySQL.
-# cmake stores detected locations where client library dependencies that
-# are bundled with it can be found. We add it here as interface property
-# so that other targets that link with the connector will have library search
-# path correctly set in the compile line.
-#
-# TODO: Modify merge_libraries() logic to autmatically detect transitive link
-# directory path properties of merged targets and then set them on the merged
-# library target.
-
-if(MYSQLCLIENT_STATIC_LINKING)
-  target_link_directories(connector-jdbc INTERFACE
-    ${MYSQL_EXTERNAL_SEARCHPATH}
-  )
-endif()
+target_link_libraries(connector-jdbc PUBLIC MySQL::client)
 
 
 #
