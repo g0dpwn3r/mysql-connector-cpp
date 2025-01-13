@@ -918,7 +918,7 @@ function(find_deps)
     unset(ssl_lib CACHE)
     find_library(ssl_lib
       NAMES ssl libssl
-      PATHS ${LIB_PATH}
+      PATHS ${LIBRARY_DIR}
       PATH_SUFFIXES private ${vs_suffix}
       NO_DEFAULT_PATH
       NO_CACHE
@@ -927,7 +927,7 @@ function(find_deps)
     unset(ssl_crypto CACHE)
     find_library(ssl_crypto
       NAMES crypto libcrypto
-      PATHS ${LIB_PATH}
+      PATHS ${LIBRARY_DIR}
       PATH_SUFFIXES private ${vs_suffix}
       NO_DEFAULT_PATH
       NO_CACHE
