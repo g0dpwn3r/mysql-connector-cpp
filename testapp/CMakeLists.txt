@@ -60,14 +60,42 @@ PROJECT(MySQL_CONCPP_TEST)
 # ========================================================================
 # Dependencies
 
+function(find_openssl where)
 
-if(WITH_SSL)
+  if(where STREQUAL "bundled")
+    if(mysql-concpp_DIR)
+      set(WITH_SSL "${mysql-concpp_DIR}")
+    else()
+      message(WARNING
+        "A request to use bundled OpenSSL libraries was made but"
+        " Connector/C++ install location was not explicitly given"
+        " via mysql-concpp_DIR or WITH_CONCPP setting."
+      )
+      return()
+    endif()
+  endif()
 
+  find_library(openssl
+    NAMES ssl
+    PATHS "${WITH_SSL}"
+    PATH_SUFFIXES "" "lib" "lib64"
+    NO_DEFAULT_PATH
+    NO_CACHE
+  )
+
+  if(NOT openssl)
+    message(WARNING
+      "OpenSSL libraries not found at specified location: ${WITH_SSL}"
+    )
+    return()
+  endif()
+
+  get_filename_component(WITH_SSL "${openssl}" DIRECTORY CACHE)
   message(STATUS "Using custom OpenSSL libraries at: ${WITH_SSL}")
 
   add_library(openssl INTERFACE)
   # TODO: Is this path correct also on non-Win platforms?
-  target_link_directories(openssl INTERFACE "${WITH_SSL}/lib")
+  target_link_directories(openssl INTERFACE "${WITH_SSL}")
 
   if(WIN32)
     set(ssl_libs libssl libcrypto)
@@ -78,12 +106,16 @@ if(WITH_SSL)
   target_link_libraries(openssl INTERFACE ${ssl_libs})
   add_library(mysql::openssl ALIAS openssl)
 
-endif()
+endfunction()
+
 
 if(NOT DEFINED mysql-concpp_DIR AND DEFINED WITH_CONCPP)
   set(mysql-concpp_DIR "${WITH_CONCPP}")
 endif()
 
+if(WITH_SSL)
+  find_openssl("${WITH_SSL}")
+endif()
 
 find_package(mysql-concpp REQUIRED ${REQUIRED_COMPONENTS})
 
