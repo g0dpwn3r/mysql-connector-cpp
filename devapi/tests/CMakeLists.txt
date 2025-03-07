@@ -38,13 +38,6 @@ set_property(
   PROPERTY COMPILE_DEFINITIONS ""
 )
 
-if(WIN32)
-  add_definitions(
-    -D_CRT_SECURE_NO_WARNINGS
-    -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-  )
-
-endif()
 
 #
 # If linking with connector statically, define macro that indicates this

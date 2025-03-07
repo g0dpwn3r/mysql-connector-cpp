@@ -7,11 +7,32 @@ set(CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS ON)
 set(VERSION "1.3.1")
 
 project(zlib VERSION ${VERSION} LANGUAGES C)
+include(../setup.cmake)
+include(platform)
 
-option(ZLIB_BUILD_EXAMPLES "Enable Zlib Examples" ON)
+enable_pic()
+
 if(WERROR)
   add_compile_options(${WERROR})
 endif()
+
+if(WIN32)
+
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
+
+  # warning triggered by one of the sources:
+  # The POSIX name for this item is deprecated. Instead, use the ISO C and C++
+  # conformant name: _open. See online help for details.
+
+  if(CLANG)
+    add_compile_options(-Wno-deprecated-declarations)
+  else()
+    add_compile_options(/wd4996)
+  endif()
+
+endif()
+
+option(ZLIB_BUILD_EXAMPLES "Enable Zlib Examples" OFF)
 
 IF(DISABLE_THESE_LINES)
 set(INSTALL_BIN_DIR "${CMAKE_INSTALL_PREFIX}/bin" CACHE PATH "Installation directory for executables")
@@ -150,8 +171,6 @@ endif()
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/zlib.h _zlib_h_contents)
 string(REGEX REPLACE ".*#define[ \t]+ZLIB_VERSION[ \t]+\"([-0-9A-Za-z.]+)\".*"
     "\\1" ZLIB_FULL_VERSION ${_zlib_h_contents})
-
-add_compile_options(-fPIC)
 
 add_library(zlib STATIC ${ZLIB_SRCS} ${ZLIB_PUBLIC_HDRS} ${ZLIB_PRIVATE_HDRS})
 

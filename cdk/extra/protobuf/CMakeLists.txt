@@ -94,8 +94,18 @@ endif()
 
 set_visibility(hidden)
 
-if(NOT TOOLSET_MSVC AND NOT APPLE)
-  add_compile_options(-Wno-stringop-overflow -Wno-stringop-overread)
+if(GCC AND GCC VERSION_GREATER 11)
+  # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=106199
+  add_compile_options(-Wno-stringop-overflow)
+  add_compile_options(-Wno-stringop-overread)
+endif()
+
+if(NOT MSVC OR CLANG)
+  add_compile_options(-Wno-unused-const-variable)
+endif()
+
+if(WIN32)
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS)
 endif()
 
 if(APPLE)

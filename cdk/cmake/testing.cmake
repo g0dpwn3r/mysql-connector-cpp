@@ -144,6 +144,7 @@ IF(WITH_TESTS)
   set_global(test_tests ${test_tests})
 
   add_library(${TEST} OBJECT ${ARGN})
+  target_link_libraries(${TEST} gtest)
   set_target_properties(${TEST} PROPERTIES FOLDER "Tests")
 
   target_include_directories(${TEST} PRIVATE ${test_includes})
@@ -153,20 +154,17 @@ IF(WITH_TESTS)
   if (MSVC)
 
     target_compile_definitions(${TEST} PRIVATE
+      -D_CRT_SECURE_NO_WARNINGS
       -D_SCL_SECURE_NO_WARNINGS
-      -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
     )
 
     target_compile_options(${TEST} PRIVATE
-      /W3
       /wd4244
       /wd4267
       /wd4701
       /wd4018
       /wd4456  # declaration of hides previous local declaration
     )
-
-    target_compile_options(${TEST} PUBLIC /std:c++14)
 
     if(STATIC_TESTS_MSVCRT)
       target_compile_options(${TEST} PRIVATE
@@ -295,10 +293,7 @@ IF(WITH_TESTS)
 
   if (MSVC)
 
-    target_compile_definitions(${target_run_unit_tests} PRIVATE
-      -D_SCL_SECURE_NO_WARNINGS
-      -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-    )
+    set_warnings_level(3)
 
     target_compile_options(${target_run_unit_tests} PRIVATE
       /wd4244

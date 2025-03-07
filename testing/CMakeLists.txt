@@ -49,25 +49,13 @@ endif()
 add_library(test_harness STATIC test_harness.cc)
 set_target_properties(test_harness PROPERTIES FOLDER "Tests")
 
+target_link_libraries(test_harness PUBLIC gtest)
+
 add_test_libraries(test_harness connector)
 add_test_includes(${CMAKE_CURRENT_SOURCE_DIR})
 
 
-if(MSVC)
-
-  set(TEST_COMPILE_FLAGS
-    -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-    -D_CRT_SECURE_NO_WARNINGS
-    -D_SCL_SECURE_NO_WARNINGS
-  )
-
-  target_compile_definitions(test_harness PUBLIC
-    -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-  )
-
-  target_compile_options(test_harness PUBLIC /std:c++14)
-
-else()
+if(NOT MSVC)
 
   set(TEST_COMPILE_FLAGS
     -Wno-sign-compare

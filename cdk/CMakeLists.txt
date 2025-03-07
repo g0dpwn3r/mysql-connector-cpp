@@ -150,7 +150,7 @@ IF(MSVC)
 
   # TODO: move to /Wall when code base is ready for this
 
-  add_compile_options(/W4)
+  set_warnings_level(4)
 
   # Note: We disable warnings related to C++11 language because we want this
   # to be pure C++ code.

@@ -89,6 +89,16 @@ function(set_visibility)
 endfunction()
 
 
+function(set_warnings_level N)
+
+  # Note: The /Wn flag must be set only once, otherwise msvc shows warnings
+
+  string(REGEX REPLACE "/W[123456789]" "" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W${N}")
+
+endfunction()
+
+
 function(set_msvcrt TYPE)
 
   if(TYPE MATCHES "^(STATIC|Static|static)$")

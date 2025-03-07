@@ -32,9 +32,6 @@
 # Set up gtest for use by targets in given folder and its sub-folders.
 #
 MACRO(SETUP_GTEST)
-  IF (WITH_GTEST)
-    INCLUDE_DIRECTORIES(${GTEST_INCLUDE_DIRS})
-  ENDIF (WITH_GTEST)
 ENDMACRO(SETUP_GTEST)
 
 
@@ -134,6 +131,14 @@ MESSAGE("gtest_main location: ${gtest_main_location}")
 
 add_library(gtest STATIC IMPORTED)
 add_library(gtest_main STATIC IMPORTED)
+
+target_include_directories(gtest INTERFACE ${GTEST_INCLUDE_DIRS})
+
+# See: https://stackoverflow.com/questions/42847103/stdtr1-with-visual-studio-2017
+
+target_compile_definitions(gtest INTERFACE
+  -DGTEST_LANG_CXX11=1
+)
 
 set_target_properties(gtest PROPERTIES
   IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"

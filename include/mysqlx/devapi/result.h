@@ -484,6 +484,9 @@ protected:
 
 public:
 
+  virtual ~Column()
+  {}
+
   friend RowResult;
   struct INTERNAL Access;
   friend Access;

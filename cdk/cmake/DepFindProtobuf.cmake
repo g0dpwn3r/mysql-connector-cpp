@@ -115,7 +115,7 @@ function(mysqlx_protobuf_generate_cpp SRCS HDRS)
   ELSEIF(MSVC)
     set_source_files_properties(${srcs}
       APPEND_STRING PROPERTY COMPILE_FLAGS
-      "/W1 /wd4018 /wd4996 /wd4244 /wd4267"
+      "/wd4018 /wd4996 /wd4244 /wd4267"
     )
   ENDIF()
 

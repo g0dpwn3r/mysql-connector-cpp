@@ -172,6 +172,8 @@ public:
   virtual Iterator begin();
   virtual Iterator end();
 
+  virtual ~DbDoc() {}
+
   friend Impl;
   friend DocResult;
   friend Value;
@@ -360,6 +362,7 @@ public:
     CATCH_AND_WRAP
   }
 
+  virtual ~Value() {}
 
 public:
 

@@ -67,13 +67,15 @@ void check_compress(mysqlx_session_t *sess)
 
   buf_len = 65536;
   memset(buf, 0, buf_len);
-  EXPECT_NE(nullptr, row = mysqlx_row_fetch_one(res));
+  row = mysqlx_row_fetch_one(res);
+  EXPECT_FALSE(nullptr == row);
   EXPECT_EQ(RESULT_OK, mysqlx_get_bytes(row, 0, 0, buf, &buf_len));
   test_row("Test ", buf);
 
   buf_len = 65536;
   memset(buf, 0, buf_len);
-  EXPECT_NE(nullptr, row = mysqlx_row_fetch_one(res));
+  row = mysqlx_row_fetch_one(res);
+  EXPECT_FALSE(nullptr == row);
   EXPECT_EQ(RESULT_OK, mysqlx_get_bytes(row, 0, 0, buf, &buf_len));
   test_row("0123 ", buf);
 
@@ -2552,7 +2554,6 @@ TEST_F(xapi, dns_srv)
   //Specifying a port number with DNS SRV lookup is not allowed.
 
   {
-
     EXPECT_EQ(nullptr, mysqlx_get_client_from_url("mysqlx+srv://root@_mysqlx._tcp.localhost:33060",
       nullptr, &error));
     std::cout << "Expected Error: " << mysqlx_error_message(error) << std::endl;
@@ -2949,7 +2950,7 @@ TEST_F(xapi, tls_ver_ciphers)
     error = NULL;
     sess = mysqlx_get_session_from_options(opt, &error);
     mysqlx_free(error);
-    EXPECT_NE(NULL, sess);
+    EXPECT_FALSE(NULL == sess);
     mysqlx_session_close(sess);
 
 

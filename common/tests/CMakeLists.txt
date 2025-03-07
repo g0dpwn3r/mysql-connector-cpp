@@ -36,14 +36,6 @@ set_property(
   PROPERTY COMPILE_DEFINITIONS ""
 )
 
-if(WIN32)
-  add_definitions(
-    -D_CRT_SECURE_NO_WARNINGS
-    -D_SILENCE_TR1_NAMESPACE_DEPRECATION_WARNING
-  )
-
-endif()
-
 #Add cdk includes because we are using their source tests
 add_test_includes(${PROJECT_SOURCE_DIR}/cdk/include)
 add_test_includes(${PROJECT_SOURCE_DIR}/cdk/extra/rapidjson/include)

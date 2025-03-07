@@ -335,7 +335,7 @@ endif()
 add_compile_options(${WERROR})
 
 
-if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 12.0)
+if (GCC AND GCC VERSION_GREATER 11)
   # Silence a warning produced by a regression in GCC 12.0 and newer
   # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=106199
   # Note: The stringop-overflow warnings are shown also during linking phase
@@ -422,7 +422,8 @@ if(MAINTAINER_MODE)
     # (and this is the case for MSVC 2015).
     # See: http://en.cppreference.com/w/cpp/language/copy_assignment
 
-    add_compile_options(/W4 /wd4512 /wd4127)
+    set_warnings_level(4)
+    add_compile_options(/wd4512 /wd4127)
 
   elseif(SUNPRO)
   else()

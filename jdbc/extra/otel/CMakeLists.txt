@@ -19,6 +19,14 @@ if(NOT (WIN32 OR APPLE OR CMAKE_SYSTEM_NAME MATCHES "SunOS"))
   if(WIN32)
     # Note: warning C4996 is triggered by OTel headers (as of version 1.10.0)
     target_compile_definitions(otel_api INTERFACE _SILENCE_CXX17_RESULT_OF_DEPRECATION_WARNING)
+
+  else()
+
+    # Note: warning triggered by OTel headers reported by clang 18:
+    # builtin __has_trivial_copy is deprecated; use __is_trivially_copyable instead
+
+    target_compile_options(otel_api INTERFACE -Wno-deprecated-builtins)
+
   endif()
 
 endif()

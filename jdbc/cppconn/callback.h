@@ -133,6 +133,8 @@ public:
     ActionRequested(msg);
   }
 
+  virtual ~WebAuthn_Callback() {}
+
 };
 
 
@@ -187,6 +189,8 @@ public:
       return;
     FidoActionRequested(msg);
   }
+
+  virtual ~Fido_Callback() {}
 
   friend class mysql::MySQL_Connection;
   friend class mysql::MySQL_Driver;
