@@ -271,11 +271,35 @@ endif()
 # TODO: Fix these warnings.
 #
 
+# TODO: Also cover linker warnings
+
+add_config_option(WERROR BOOL ADVANCED DEFAULT OFF
+  "Turn compile warnings into errors"
+)
+
+#
+# Note: If WERROR is enabled we change its value to be the actual compiler
+# option to be used on the current platform. That is used for easier
+# propagation to external builds.
+#
+# Note: In more recent cmake there is CMAKE_COMPILE_WARNING_AS_ERROR variable
+# but at the moment we can't ensure using that recent cmake.
+#
+
+if(WERROR)
+  set(WERROR -Werror)
+endif()
+
 if(MSVC)
 
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 
   if(CXX_FRONTEND_MSVC)
+
+    if(WERROR)
+      set(WERROR /WX)  # MSVC equivalent of -Werror
+    endif()
+
     # Disable MSVC unreachable code warnings unless requested.
     add_compile_options(/wd4702)
 
@@ -283,18 +307,33 @@ if(MSVC)
     # Seehttps://connect.microsoft.com/VisualStudio/feedback/details/897611/incorrect-warning-of-c4297-for-destructor-with-try-catch-statement
 
     add_compile_options(/wd4297)
+
   endif()
 
-endif()
+elseif(SUNPRO)
 
+  # Note: For simplicity we do not handle WERROR on SunOS
 
-if(SUNPRO)
+  set(WERROR)
 
   add_compile_options(
     -errtags=yes -erroff=hidevf,wvarhidemem
   )
 
 endif()
+
+if(NOT WERROR)
+  # clear if WERROR was set to something like OFF or FALSE
+  # message(STATUS "WERROR: cleared")
+  unset(WERROR CACHE)
+else()
+  # overwrite cache entry with changed value
+  set(WERROR "${WERROR}" CACHE INTERNAL "WERROR flags" FORCE)
+endif()
+
+# message(STATUS "WERROR: ${WERROR}")
+add_compile_options(${WERROR})
+
 
 if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 12.0)
   # Silence a warning produced by a regression in GCC 12.0 and newer
