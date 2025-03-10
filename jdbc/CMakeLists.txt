@@ -215,10 +215,8 @@ if(NOT SHOW_JDBC_WARNINGS)
 
   else()
 
-    add_compile_options(
-      -Wno-unused-parameter
-      -Wno-deprecated-declarations
-    )
+    set_compiler_flag(-Wno-unused-parameter)
+    set_compiler_flag(-Wno-deprecated-declarations)
 
   endif()
 

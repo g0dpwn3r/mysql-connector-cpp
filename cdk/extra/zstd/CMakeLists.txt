@@ -22,7 +22,7 @@ endif()
 if(WIN32 AND CLANG)
   # This warning shows only when building with clang on Win (clang 18):
   # lib\compress\huf_compress.c(519,16): error : unused function 'HUF_isSorted'
-  add_compile_options(-Wno-unused-function)
+  set_compiler_flag(-Wno-unused-function)
 endif()
 
 

@@ -96,12 +96,12 @@ set_visibility(hidden)
 
 if(GCC AND GCC VERSION_GREATER 11)
   # See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=106199
-  add_compile_options(-Wno-stringop-overflow)
-  add_compile_options(-Wno-stringop-overread)
+  set_compiler_flag(-Wno-stringop-overflow)
+  set_compiler_flag(-Wno-stringop-overread)
 endif()
 
 if(NOT MSVC OR CLANG)
-  add_compile_options(-Wno-unused-const-variable)
+  set_compiler_flag(-Wno-unused-const-variable)
 endif()
 
 if(WIN32)
@@ -109,7 +109,7 @@ if(WIN32)
 endif()
 
 if(APPLE)
-  add_compile_options(-Wno-deprecated-declarations)
+  set_compiler_flag(-Wno-deprecated-declarations)
 endif()
 
 

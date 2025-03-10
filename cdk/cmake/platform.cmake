@@ -115,6 +115,17 @@ macro(add_flags LANG)
   set(CMAKE_${LANG}_FLAGS "${CMAKE_${LANG}_FLAGS}" PARENT_SCOPE)
 endmacro()
 
+include(CheckCXXCompilerFlag)
+
+# Set single compiler flag only if it is supported, ignore otherwise
+
+macro(set_compiler_flag FLAG)
+  unset(flag_supported CACHE)
+  CHECK_CXX_COMPILER_FLAG(${FLAG} flag_supported)
+  if(flag_supported)
+    add_compile_options(${FLAG})
+  endif()
+endmacro()
 
 # -----------------------------------------------------------------
 
