@@ -124,11 +124,12 @@ macro(add_version_tests)
 
     if(WITH_CONCPP)
 
-      find_file(INFO_SRC 
+      unset(INFO_SRC CACHE)
+      find_file(INFO_SRC
         NAME INFO_SRC
         PATHS ${WITH_CONCPP}
         NO_DEFAULT_PATH
-        NO_CACHE
+        #NO_CACHE # Note: requires cmake 3.21
       )
 
     else()
@@ -210,7 +211,7 @@ macro(add_version_tests)
 
     # Prepare options for run_test.cmake
 
-    set(test_opts 
+    set(test_opts
       "-DVERSION=${VERSION_${A}}"
       "-DWITH_DEBUG=${WITH_DEBUG}"
     )
@@ -256,12 +257,13 @@ macro(add_tests)
 
   if(WITH_SSL)
 
+    unset(openssl_lib CACHE)
     find_library(openssl_lib
       NAMES ssl libssl
       PATHS ${WITH_SSL}
       PATH_SUFFIXES lib
       NO_DEFAULT_PATH
-      NO_CACHE
+      # NO_CACHE
     )
 
   endif()
@@ -287,8 +289,8 @@ macro(add_tests)
     # Note: On Windows scenarios which build in Debug mode with static
     # connector library are added only if debug package is available.
 
-    if(WIN32 
-      AND A STREQUAL "static" 
+    if(WIN32
+      AND A STREQUAL "static"
       AND B STREQUAL "Debug"
       AND NOT WITH_DEBUG
     )
@@ -332,7 +334,7 @@ macro(add_tests)
     #
     # They are implemented by run_test.cmake -- see there.
 
-    add_test("config_${name_suffix}" 
+    add_test("config_${name_suffix}"
       ${CMAKE_COMMAND}
       "-DCDK_DIR=${CDK_DIR}"
       "-DCONCPP_SRC_DIR=${HOME_DIR}/../.."
@@ -347,7 +349,7 @@ macro(add_tests)
       FIXTURES_SETUP "${name_suffix}_configured"
     )
 
-    add_test("build_${name_suffix}" 
+    add_test("build_${name_suffix}"
       ${CMAKE_COMMAND}
       "-DCDK_DIR=${CDK_DIR}"
       "-DCONCPP_SRC_DIR=${HOME_DIR}/../.."
@@ -365,7 +367,7 @@ macro(add_tests)
 
     message(STATUS "# added test: build_${name_suffix}")
 
-    add_test("check_${name_suffix}" 
+    add_test("check_${name_suffix}"
       ${CMAKE_COMMAND}
       "-DCDK_DIR=${CDK_DIR}"
       "-DCONCPP_SRC_DIR=${HOME_DIR}/../.."

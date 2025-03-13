@@ -182,11 +182,11 @@ function(action_check)
   foreach(exec devapi_test xapi_test jdbc_test)
 
     set(exec_path)
-    find_program(exec_path 
+    find_program(exec_path
       NAMES ${exec}
       PATHS "config_test/${out_dir}"
       NO_DEFAULT_PATH
-      NO_CACHE
+      # NO_CACHE # note: requires cmake 3.21
     )
 
     if(NOT EXISTS "${exec_path}")

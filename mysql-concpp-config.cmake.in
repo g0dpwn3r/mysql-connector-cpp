@@ -479,11 +479,12 @@ function(find_includes)
 
   #message(STATUS "Looking for headers at: ${INCLUDE_DIR}")
 
+  unset(MYSQL_CONCPP_INCLUDE_DIR CACHE)
   find_path(MYSQL_CONCPP_INCLUDE_DIR
     NAMES mysqlx/xdevapi.h
     PATHS ${INCLUDE_DIR}
     NO_DEFAULT_PATH
-    NO_CACHE
+    # NO_CACHE  # Note: requires cmake 3.21
   )
 
   if(NOT MYSQL_CONCPP_INCLUDE_DIR)
@@ -697,7 +698,7 @@ function(add_connector_target which tgt base_name)
   find_library(lib_path
     NAMES ${lib_name}
     ${find_lib_paths} ${win_opts}
-    NO_CACHE
+    # NO_CACHE
   )
 
   if(lib_path)
@@ -740,7 +741,7 @@ function(add_connector_target which tgt base_name)
       PATHS "${LIBRARY_DIR}/debug"
       ${win_opts}
       NO_DEFAULT_PATH
-      NO_CACHE
+      # NO_CACHE
     )
 
     if(lib_path_debug)
@@ -880,12 +881,13 @@ function(find_imp_lib var base_name path)
   set(CMAKE_FIND_LIBRARY_SUFFIXES .lib)
 
   #message("!!! Looking for import library for: ${path}")
+  unset(${var} CACHE)
   find_library(${var}
     NAMES ${base_name}
     PATHS ${base_path}
     PATH_SUFFIXES ${vs_suffix}
     NO_DEFAULT_PATH
-    NO_CACHE
+    # NO_CACHE
   )
 
   if(NOT ${var})
@@ -921,7 +923,7 @@ function(find_deps)
       PATHS ${LIBRARY_DIR}
       PATH_SUFFIXES private ${vs_suffix}
       NO_DEFAULT_PATH
-      NO_CACHE
+      # NO_CACHE
     )
 
     unset(ssl_crypto CACHE)
@@ -930,7 +932,7 @@ function(find_deps)
       PATHS ${LIBRARY_DIR}
       PATH_SUFFIXES private ${vs_suffix}
       NO_DEFAULT_PATH
-      NO_CACHE
+      # NO_CACHE
     )
 
     if(NOT ssl_lib OR NOT ssl_crypto)

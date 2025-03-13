@@ -75,12 +75,13 @@ function(find_openssl where)
     endif()
   endif()
 
+  unset(openssl CACHE)
   find_library(openssl
     NAMES ssl
     PATHS "${WITH_SSL}"
     PATH_SUFFIXES "" "lib" "lib64"
     NO_DEFAULT_PATH
-    NO_CACHE
+    # NO_CACHE # Note: requires cmake 3.21
   )
 
   if(NOT openssl)
