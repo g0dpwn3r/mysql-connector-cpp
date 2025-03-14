@@ -558,6 +558,18 @@ function(bundle_lib lib)
       DESTINATION "${INSTALL_LIB_DIR}"
       COMPONENT JDBCDll
     )
+    # Symlinks need to be created to allow authenticating
+    # plugins to load dependencies in MacOS
+    #
+    # NOTE: in Linux the dependencies are adressed in
+    #       a different way
+    install(CODE "
+      execute_process(
+        COMMAND ${CMAKE_COMMAND} -E create_symlink ../${lib_name} ${lib_name}
+        WORKING_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/plugin\"
+      )
+    ")
+
     else()
       install(FILES ${lib}
         DESTINATION "${INSTALL_LIB_DIR}/private"
@@ -647,6 +659,26 @@ macro(bundle_libs to_bundle ignored)
     endif()
 
   endforeach()
+
+  if(APPLE)
+    # Create symlinks for OpenSSL dependencies in MacOS.
+    # The actual OpenSSL libraries should already be
+    # installed with XDevAPI connector.
+    # Other dependencies such as fido2 already have symlinks
+    # created at this stage.
+    install(CODE "
+      foreach(openssl_lib ssl crypto)
+        file(GLOB found_libs \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/lib\${openssl_lib}.*dylib\")
+        foreach(lib_file \${found_libs})
+          get_filename_component(openssl_lib_name \${lib_file} NAME)
+          execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink ../\${openssl_lib_name} \${openssl_lib_name}
+            WORKING_DIRECTORY \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}/plugin\"
+          )
+        endforeach(lib_file)
+      endforeach(openssl_lib)
+    ")
+  endif()
 
 endmacro(bundle_libs)
 
