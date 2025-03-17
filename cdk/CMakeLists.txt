@@ -28,9 +28,9 @@
 
 
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.15)
 
-cmake_policy(VERSION 3.0)
+cmake_policy(VERSION 3.15)
 
 if(POLICY CMP0022)
   cmake_policy(SET CMP0022 NEW)  # consistently use INTERFACE_LINK_LIBRARIES property

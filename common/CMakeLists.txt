@@ -29,6 +29,26 @@
 
 file(GLOB HEADERS *.h)
 
+#TODO: Remove -Wno-delete-non-abstract-non-virtual-dtor when bumping ABI and
+#      adding virtual destructor for DbDoc, Value and Column_detail
+
+if(CLANG)
+
+set_compiler_flag(-Wno-delete-non-abstract-non-virtual-dtor)
+
+  # Note: GCC/clang and MSVC compilers have different rules for resolving
+  # relative paths in #include "..." directives [1]. The clang-cl compiler
+  # understands both conventions but gives warning when using MSVC rules. Since
+  # headers included by this code trigger the warning we disable it here (this
+  # is about version_info.h included from nysqlx/common_constants.h)
+  #
+  # [1] https://stackoverflow.com/questions/48538707/include-search-paths-from-included-header-varies-for-different-compilers
+
+  set_compiler_flag(-Wno-microsoft-include)
+
+endif()
+
+
 add_library(common STATIC
   session.cc result.cc collection.cc value.cc
   ${HEADERS}
@@ -36,13 +56,6 @@ add_library(common STATIC
 
 target_link_libraries(common cdk)
 
-#TODO: Remove -Wno-delete-non-abstract-non-virtual-dtor when bumping ABI and
-  #      adding virtual destructor for DbDoc, Value and Column_detail
-if(CLANG)
-  target_compile_options(common PRIVATE
-    -Wno-delete-non-abstract-non-virtual-dtor
-  )
-endif()
 
 #
 # Note: generated version_info.h is placed in the build location
