@@ -290,7 +290,7 @@ if(WERROR)
   set(WERROR -Werror)
 endif()
 
-if(MSVC)
+if(MSVC OR TOOLSET_MSVC)
 
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
 

@@ -25,7 +25,7 @@ if(WIN32)
   # conformant name: _open. See online help for details.
 
   if(CLANG)
-    set_compiler_flag(-Wno-deprecated-declarations)
+    add_compile_options(-Wno-deprecated-declarations)
   else()
     add_compile_options(/wd4996)
   endif()

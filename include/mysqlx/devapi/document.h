@@ -172,8 +172,6 @@ public:
   virtual Iterator begin();
   virtual Iterator end();
 
-  virtual ~DbDoc() {}
-
   friend Impl;
   friend DocResult;
   friend Value;
