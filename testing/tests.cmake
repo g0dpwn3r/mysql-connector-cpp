@@ -191,7 +191,12 @@ if(NOT DEFINED ABI_CHECK AND MSVC AND MAINTAINER_MODE)
   set(ABI_CHECK 1)
 endif()
 
-if(ABI_CHECK)
+# Note: The machinery we use to perform ABI checks works only
+# with the original MSVC compiler which can produce required
+# export map file, not with clang-cl (for which MSVC is also
+# defined)
+
+if(ABI_CHECK AND MSVC AND NOT CLANG)
   add_abi_check()
 endif()
 
