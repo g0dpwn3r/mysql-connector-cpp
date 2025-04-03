@@ -46,6 +46,7 @@
 
 #define NOEXCEPT noexcept
 
+#include <cstdint>
 #include "common_constants.h"
 #include "common/api.h"
 #include "common/error.h"
