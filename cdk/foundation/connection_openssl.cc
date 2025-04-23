@@ -362,7 +362,7 @@ void TLS_helper::setup(SSL_CTX *ctx)
 
 #endif
 
-  long result_mask = SSL_CTX_set_options(ctx, m_ver_mask);
+  uint64_t result_mask = SSL_CTX_set_options(ctx, m_ver_mask);
 
   if ((result_mask & m_ver_mask) == 0)
     throw_openssl_error();
