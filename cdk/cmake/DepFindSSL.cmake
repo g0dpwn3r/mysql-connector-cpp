@@ -148,6 +148,47 @@ function(find_openssl)
 
     set(OPENSSL_LIBRARY "${OPENSSL_SSL_LIBRARY}")
 
+    if(OPENSSL_ROOT_DIR)
+
+      # Even when OPENSSL_ROOT_DIR is set the OpenSSL package can incorrectly
+      # find debug variants of OpenSSL libraries outside of that location. We
+      # don't want that to happen and to fix it we check that debug location
+      # found by OpenSSL package is inside OPENSSL_ROOT_DIR -- if this is
+      # not the case we clear the _DEBUG location as if debug variants were
+      # not found.
+      #
+      # Note: We assume that the issue is not present for regular/non-debug
+      # variants of the library which are always found inside OPENSSL_ROOT_DIR
+      # if that is specified.
+      #
+      # Note: In case _DEBUG location is removed here the build uses regular
+      # variants of the OpenSSL library for debug builds (this seems
+      # to be the cmake built-in behavior). Not sure if that is correct
+      # on Windows but we ignore the issue for now.
+
+      get_filename_component(root "${OPENSSL_ROOT_DIR}" REALPATH)
+
+      foreach(tgt SSL Crypto)
+
+        get_property(v TARGET OpenSSL::${tgt} PROPERTY LOCATION_DEBUG)
+        # message(STATUS "Debug location for target ${t}: ${v}")
+
+        if(NOT v)
+          continue()
+        endif()
+
+        get_filename_component(v "${v}" REALPATH)
+        string(FIND "${v}" "${root}" pos)
+
+        if(NOT pos EQUAL 0)
+          # message(STATUS "not in the specified root location: ${root}")
+          set_property(TARGET OpenSSL::${tgt} PROPERTY IMPORTED_LOCATION_DEBUG)
+        endif()
+
+      endforeach()
+
+    endif(OPENSSL_ROOT_DIR)
+
   else()
 
     # Use our simplified replacement for broken FindOpenSSL
