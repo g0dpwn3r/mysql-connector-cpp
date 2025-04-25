@@ -801,6 +801,12 @@ endmacro(bundle_plugins)
 
 if(BUNDLE_DEPENDENCIES)
 
+  if(MAINTAINER_MODE)
+    set(DEP_ERROR SEND_ERROR)
+  else()
+    set(DEP_ERROR STATUS)
+  endif()
+
   message(STATUS "Looking for bundled client-side plugins")
 
   # add authentication plugins to the list of plugins
@@ -819,36 +825,37 @@ if(BUNDLE_DEPENDENCIES)
   unset(ingored)
   bundle_plugins(ignored)
 
-  if(MAINTAINER_MODE)
+  foreach(plugin ${PLUGINS})
 
-    foreach(plugin ${PLUGINS})
+    # Note: In some RE builds we use a modified build of the client library
+    # which does not ship the native password authentication plugin but has
+    # it built-in. Therefore we don't complain if the plugin was not found
+    # assuming that in this case it is built-in and needs not to be bundled.
 
-      # Note: In some RE builds we use a modified build of the client library
-      # which does not ship the native password authentication plugin but has
-      # it built-in. Therefore we don't complain if the plugin was not found
-      # assuming that in this case it is built-in and needs not to be bundled.
-
-      if(NOT plugin STREQUAL "mysql_native_password")
-        message(SEND_ERROR
-          "known client-side plugin not found and not bundled: ${plugin}"
-        )
-      endif()
-
-    endforeach()
-
-    foreach(plugin ${IGNORED_PLUGINS})
-      list(FILTER ignored EXCLUDE REGEX "^${plugin}")
-    endforeach()
-
-    if(ignored)
-      message(SEND_ERROR
-        "Unrecognized client-side plugins bundled with the server were found,"
-        " please update definitions in cmake lists to either ignore them"
-        " or bundle with the conector: ${ignored}"
+    if(plugin STREQUAL "mysql_native_password")
+      message(STATUS
+        "The mysql_native_password plugin was not found with the server"
       )
+      continue()
     endif()
 
-  endif(MAINTAINER_MODE)
+    message(${DEP_ERROR}
+      "known client-side plugin not found and not bundled: ${plugin}"
+    )
+
+  endforeach()
+
+  foreach(plugin ${IGNORED_PLUGINS})
+    list(FILTER ignored EXCLUDE REGEX "^${plugin}")
+  endforeach()
+
+  if(ignored)
+    message(${DEP_ERROR}
+      "Unrecognized client-side plugins bundled with the server were found,"
+      " please update definitions in cmake lists to either ignore them"
+      " or bundle with the conector: ${ignored}"
+    )
+  endif()
 
 
   message(STATUS "Looking for bundled client lib dependencies")
@@ -859,38 +866,35 @@ if(BUNDLE_DEPENDENCIES)
   unset(extra_libs)
   bundle_libs(BUNDLED_LIBS extra_libs)
 
-  # In MAINTAINER_MODE check whether all 3rd party libs found but not bundled
-  # are listed in IGNORED_LIBS
+  # Check whether all 3rd party libs found but not bundled are listed
+  # in IGNORED_LIBS
 
-  if(MAINTAINER_MODE)
+  # Extend ignore list with libraries that are dependencies of known plugins
+  # and are not listed in BUNDLED_LIBS. Otherwise we would get false errors
+  # below.
 
-    # Extend ignore list with libraries that are dependencies of known plugins
-    # and are not listed in BUNDLED_LIBS. Otherwise we would get false errors
-    # below.
+  foreach(plugin PLUGINS)
+    list(APPEND IGNORED_LIBS ${DEPS_${plugin}})
+  endforeach()
 
-    foreach(plugin PLUGINS)
-      list(APPEND IGNORED_LIBS ${DEPS_${plugin}})
-    endforeach()
+  # Remove from ${extra_libs} the libraries that we know we should ignore.
 
-    # Remove from ${extra_libs} the libraries that we know we should ignore.
+  #message("== extra_libs: ${extra_libs}")
+  foreach(lib ${IGNORED_LIBS})
+    #message(STATUS "removing: ${lib}")
+    list(FILTER extra_libs EXCLUDE REGEX "^${lib}")
+    list(FILTER extra_libs EXCLUDE REGEX "^lib${lib}")
+  endforeach()
+  #message("== extra_libs: ${extra_libs}")
 
-    #message("== extra_libs: ${extra_libs}")
-    foreach(lib ${IGNORED_LIBS})
-      #message(STATUS "removing: ${lib}")
-      list(FILTER extra_libs EXCLUDE REGEX "^${lib}")
-      list(FILTER extra_libs EXCLUDE REGEX "^lib${lib}")
-    endforeach()
-    #message("== extra_libs: ${extra_libs}")
-
-    if(extra_libs)
-      message(SEND_ERROR
-        "Unrecognized 3rd party library bundled with the server were found,"
-        " please update definitions in cmake lists to either ignore them"
-        " or bundle with the conector: ${extra_libs}"
-      )
-    endif()
-
+  if(extra_libs)
+    message(${DEP_ERROR}
+      "Unrecognized 3rd party library bundled with the server were found,"
+      " please update definitions in cmake lists to either ignore them"
+      " or bundle with the conector: ${extra_libs}"
+    )
   endif()
+
 
 endif(BUNDLE_DEPENDENCIES)
 
