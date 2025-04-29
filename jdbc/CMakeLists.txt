@@ -419,10 +419,10 @@ set(AUTH_PLUGINS
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "SunOS")
   list(APPEND AUTH_PLUGINS webauthn)
-  # Note: Kerberos authentication plugin is not supported on macOS
-  if(NOT APPLE)
-    list(APPEND AUTH_PLUGINS kerberos)
-  endif()
+endif()
+
+if(APPLE AND MYSQL_VERSION VERSION_GREATER_EQUAL 9.4)
+  list(APPEND AUTH_PLUGINS kerberos)
 endif()
 
 
