@@ -33,12 +33,16 @@
 #define _MYSQL_TELEMETRY_H_
 
 #include <cppconn/connection.h>  // opentelemetry_mode enum
-#ifdef TELEMETRY
-#include <opentelemetry/trace/provider.h>
-#endif
 
 #include "mysql_uri.h"
 #include <string>
+
+#ifdef TELEMETRY
+// Note: we ignore warnings in 3-rd party code
+NO_WARNINGS_PUSH
+#include <opentelemetry/trace/provider.h>
+NO_WARNINGS_POP
+#endif
 
 
 namespace sql
@@ -86,7 +90,7 @@ namespace mysql
     {
       using Obj = MySQL_Connection;
 
-      void set_mode(opentelemetry_mode m) 
+      void set_mode(opentelemetry_mode m)
 #ifndef TELEMETRY
       {}
 #else
@@ -96,8 +100,8 @@ namespace mysql
 #endif
 
       void set_attribs(
-        MySQL_Connection* con, 
-        MySQL_Uri::Host_data& endpoint, 
+        MySQL_Connection* con,
+        MySQL_Uri::Host_data& endpoint,
         sql::ConnectOptionsMap& options
       )
 #ifndef TELEMETRY

@@ -162,6 +162,30 @@
 
 #endif
 
+
+/*
+  NO_WARNINGS_PUSH/POP macros are intended to locally disable warnings
+  for example when including 3-rd party headers (however, it should not be used
+  for std library headers -- we should ensure they are used in a way that does
+  not generate any warnings)
+*/
+
+#if defined _MSC_VER
+
+#define NO_WARNINGS_PUSH  PRAGMA(warning (push,0))
+#define NO_WARNINGS_POP   PRAGMA(warning (pop))
+
+#else
+
+#define NO_WARNINGS_PUSH  DIAGNOSTIC_PUSH \
+  DISABLE_WARNING(-Wall) DISABLE_WARNING(-Wextra) DISABLE_WARNING(-Wcpp)
+#define NO_WARNINGS_POP   DIAGNOSTIC_POP
+
+#endif
+
+
+
+
 namespace sql
 {
 namespace mysql
