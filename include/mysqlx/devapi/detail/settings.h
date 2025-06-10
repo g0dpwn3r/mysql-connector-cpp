@@ -163,6 +163,8 @@ protected:
   )
   {
     if (opt != Session_option_impl::CONNECT_TIMEOUT &&
+        opt != Session_option_impl::READ_TIMEOUT &&
+        opt != Session_option_impl::WRITE_TIMEOUT &&
         opt != Client_option_impl::POOL_QUEUE_TIMEOUT &&
         opt != Client_option_impl::POOL_MAX_IDLE_TIME)
     {

@@ -361,6 +361,24 @@ void set_nonblocking(Socket socket, bool nonblocking)
 }
 
 
+void set_timeout(Socket socket, uint64_t usec, bool rd_timeout)
+{
+#ifdef _WIN32
+  // Convert to milliseconds for Windows
+  DWORD timeout = (DWORD)usec/1000;
+#else
+  struct timeval timeout;
+  timeout.tv_sec = (uint64_t) usec / 1000000;
+  timeout.tv_usec = usec % 1000000;
+#endif
+  if (::setsockopt(socket, SOL_SOCKET, rd_timeout ? SO_RCVTIMEO : SO_SNDTIMEO,
+                   (const char*)&timeout,
+                   sizeof(timeout)) != 0
+  )
+    throw_socket_error();
+}
+
+
 #if defined WITH_SSL && OPENSSL_VERSION_NUMBER < 0x10100000L
 //Not needed after 1.1
 
@@ -608,12 +626,11 @@ DIAGNOSTIC_PUSH_CDK
   DISABLE_WARNING_CDK(4189)
 #endif
 
-Socket connect(const char *host_name, unsigned short port,
-               uint64_t timeout_usec)
+Socket connect(const char *host_name, unsigned short port, uint64_t cn_timeout_usec)
 {
   Socket socket = NULL_SOCKET;
   addrinfo* host_list = NULL;
-  auto deadline = system_clock::now() + microseconds(timeout_usec);
+  auto deadline = system_clock::now() + microseconds(cn_timeout_usec);
 
   // Resolve host name.
   // TODO: Configurable number of attempts
@@ -628,9 +645,9 @@ Socket connect(const char *host_name, unsigned short port,
         Therefore, we will do the blocking call and measure the time
       */
       host_list = detail::addrinfo_from_string(host_name, port);
-      if (timeout_usec > 0 && system_clock::now() >= deadline)
+      if (cn_timeout_usec > 0 && system_clock::now() >= deadline)
       {
-        throw Connect_timeout_error(timeout_usec / 1000);
+        throw Connect_timeout_error(cn_timeout_usec / 1000);
       }
     }
     catch (Error& e)
@@ -656,6 +673,7 @@ Socket connect(const char *host_name, unsigned short port,
     try
     {
       socket = detail::socket(true, host);
+
       connect_result = ::connect(socket, host->ai_addr, static_cast<int>(host->ai_addrlen));
 
       if (connect_result != 0)
@@ -677,7 +695,7 @@ Socket connect(const char *host_name, unsigned short port,
 
             select_result = poll_one(
                               socket, POLL_MODE_CONNECT, true,
-                              0 == timeout_usec ? 0 : timeout > 0 ? timeout : 1
+                              0 == cn_timeout_usec ? 0 : timeout > 0 ? timeout : 1
                                                                     );
           // Note: if poll_one() returns 0 then, according to POSIX specs:
           // A value of 0 indicates that the call timed out and no file descriptors have been selected
@@ -685,19 +703,19 @@ Socket connect(const char *host_name, unsigned short port,
           // So we will check if timeout occurs and try again if not
 
           } while ((select_result == 0) &&
-                   ((timeout_usec == 0) ||
+                   ((cn_timeout_usec == 0) ||
                     (std::chrono::system_clock::now() < deadline)
                     )
                    );
 
-          if ((timeout_usec > 0) &&
+          if ((cn_timeout_usec > 0) &&
               (std::chrono::system_clock::now() >= deadline))
           {
             // Throw the error in milliseconds, which we did not adjust.
             // Otherwise the user will be confused why the timeout
             // in the error message is smaller than defined
             // (original timeout minus DNS resolution time)
-            throw Connect_timeout_error(timeout_usec / 1000);
+            throw Connect_timeout_error(cn_timeout_usec / 1000);
           }
 
           if (select_result < 0)
@@ -734,10 +752,10 @@ Socket connect(const char *host_name, unsigned short port,
 DIAGNOSTIC_POP_CDK
 
 #ifndef _WIN32
-Socket connect(const char *path, uint64_t timeout_usec)
+Socket connect(const char *path, uint64_t cn_timeout_usec)
 {
   Socket socket = NULL_SOCKET;
-  auto deadline = system_clock::now() + microseconds(timeout_usec);
+  auto deadline = system_clock::now() + microseconds(cn_timeout_usec);
 
   // Connect to host.
   int connect_result = SOCKET_ERROR;
@@ -750,6 +768,7 @@ Socket connect(const char *path, uint64_t timeout_usec)
   try
   {
     socket = detail::unix_socket(true);
+
     connect_result = ::connect(socket,
                                (struct sockaddr*)(&addr),
                                sizeof(addr));
@@ -759,12 +778,12 @@ Socket connect(const char *path, uint64_t timeout_usec)
       if (connect_result == SOCKET_ERROR && errno == EINPROGRESS)
       {
         int select_result = poll_one(socket, POLL_MODE_CONNECT, true,
-                                       timeout_usec);
-        if (select_result == 0 && (timeout_usec > 0) &&
+                                       cn_timeout_usec);
+        if (select_result == 0 && (cn_timeout_usec > 0) &&
           (system_clock::now() >= deadline))
         {
           // We probably hit the timeout
-          throw Connect_timeout_error(timeout_usec / 1000);
+          throw Connect_timeout_error(cn_timeout_usec / 1000);
         }
         else if (select_result < 0)
           throw_socket_error();

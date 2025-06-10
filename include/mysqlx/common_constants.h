@@ -152,6 +152,16 @@
     lists
   */                                                                         \
   OPT_STR(x,SSL_CRLPATH,21)                                                 \
+  /*!
+    Sets read timeout in milliseconds. In C++ code can be also set to
+    a `std::chrono::duration` value.
+  */ \
+  OPT_NUM(x,READ_TIMEOUT,22)                                              \
+  /*!
+    Sets write timeout in milliseconds. In C++ code can be also set to
+    a `std::chrono::duration` value.
+  */ \
+  OPT_NUM(x,WRITE_TIMEOUT,23)                                             \
   END_LIST
 
 
@@ -178,6 +188,8 @@
   X("tls-ciphersuites", TLS_CIPHERSUITES) \
   X("compression", COMPRESSION) \
   X("compression-algorithms", COMPRESSION_ALGORITHMS) \
+  X("read-timeout", READ_TIMEOUT) \
+  X("write-timeout", WRITE_TIMEOUT) \
   END_LIST
 
 

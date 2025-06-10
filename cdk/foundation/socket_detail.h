@@ -113,6 +113,23 @@ void set_nonblocking(Socket socket, bool nonblocking);
 
 
 /**
+   Set timeout for a socket.
+
+   Sets read or write timeout for a socket.
+
+  @param[in] socket
+    Socket being modified.
+
+  @param[in] timeout
+    Timeout in microseconds
+
+  @param[in] rd_timeout
+    If `true`, sets the read timeout. Otherwise sets the write timeout.
+ */
+void set_timeout(Socket socket, uint64_t timeout, bool rd_timeout);
+
+
+/**
   Initialize socket system.
 
   Initializes socket system (e.g. Winsock), if it is required by a given
@@ -237,8 +254,8 @@ addrinfo* addrinfo_from_string(const char* host_name, unsigned short port);
     Destination host name.
   @param[in] port
     Destination host port.
-  @param[in] timeout_usec
-    Timeout in microseconds. 0 means wait indefinitely.
+  @param[in] cn_timeout_usec
+    Connect timeout in microseconds. 0 means wait indefinitely.
 
   @return
     Connected socket.
@@ -250,8 +267,7 @@ addrinfo* addrinfo_from_string(const char* host_name, unsigned short port);
     This function always blocks.
 */
 
-Socket connect(const char *host, unsigned short port,
-               uint64_t timeout_usec);
+Socket connect(const char *host, unsigned short port, uint64_t cn_timeout_usec);
 
 #ifndef _WIN32
 /**
@@ -262,8 +278,8 @@ Socket connect(const char *host, unsigned short port,
   @param[in] path
     Destination socket path.
 
-  @param[in] timeout_usec
-    Timeout in microseconds. 0 means wait indefinitely.
+  @param[in] cn_timeout_usec
+    Connect timeout in microseconds. 0 means wait indefinitely.
 
   @return
     Connected socket.
@@ -274,7 +290,7 @@ Socket connect(const char *host, unsigned short port,
   @note
     This function always blocks.
 */
-Socket connect(const char *path, uint64_t timeout_usec);
+Socket connect(const char *path, uint64_t cn_timeout_usec);
 #endif //_WIN32
 
 

@@ -40,5 +40,5 @@ if(BUILD_STATIC)
   add_definitions(-DSTATIC_CONCPP)
 endif()
 
-ADD_NG_TEST(xapi-t xapi_crud-t.cc xapi-t.cc test.h)
+ADD_NG_TEST(xapi-t xapi_crud-t.cc xapi-t.cc xapi_timeout-t.cc test.h)
 

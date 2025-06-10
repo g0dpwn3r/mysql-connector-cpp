@@ -50,7 +50,7 @@ endif()
 
 ADD_NG_TEST(devapi-t
   first-t.cc crud-t.cc types-t.cc batch-t.cc ddl-t.cc session-t.cc
-  bugs-t.cc test.h
+  bugs-t.cc timeout-t.cc test.h
 )
 
 set(TLS_CIPHERS_H "${CDKDIR}/foundation/tls_ciphers.h")

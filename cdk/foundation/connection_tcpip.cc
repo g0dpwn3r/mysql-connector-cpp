@@ -74,8 +74,14 @@ void connection_TCPIP_impl::do_connect()
   if (is_open())
     return;
 
-  m_sock = connection::detail::connect(m_host.c_str(), m_port,
-                                       m_opts.get_connection_timeout());
+  m_sock = connection::detail::connect(m_host.c_str(), m_port, m_opts.get_connection_timeout());
+
+  // Note: Setting timeouts in microseconds. No need to convert.
+
+  if (m_opts.has_write_timeout())
+    connection::detail::set_timeout(m_sock, m_opts.get_read_timeout(), true);
+  if (m_opts.has_read_timeout())
+    connection::detail::set_timeout(m_sock, m_opts.get_write_timeout(), false);
 }
 
 
@@ -118,8 +124,15 @@ void connection_Unix_socket_impl::do_connect()
   if (is_open())
     return;
 
-  m_sock = connection::detail::connect(m_path.c_str(),
-                                       m_opts.get_connection_timeout());
+  m_sock = connection::detail::connect(m_path.c_str(), m_opts.get_connection_timeout());
+
+  // Note: Conversion from milliseconds to microseconds.
+  // TODO: Do we really need/want to set timeouts on Unix socket?
+
+  if (m_opts.has_write_timeout())
+    connection::detail::set_timeout(m_sock, 1000 * m_opts.get_read_timeout(), true);
+  if (m_opts.has_read_timeout())
+    connection::detail::set_timeout(m_sock, 1000 * m_opts.get_write_timeout(), false);
 }
 
 

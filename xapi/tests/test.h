@@ -273,5 +273,7 @@ public:
 class xapi_bugs : public xapi
 {};
 
+class xapi_timeout : public xapi
+{};
 
 #endif

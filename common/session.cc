@@ -315,6 +315,14 @@ void prepare_options(
   else
     opts.set_connection_timeout(DEFAULT_CN_TIMEOUT_US);
 
+  if (settings.has_option(Option::READ_TIMEOUT))
+    opts.set_read_timeout(settings.get(Option::READ_TIMEOUT).
+           get_uint() * 1000); // millisec to microsec
+
+  if (settings.has_option(Option::WRITE_TIMEOUT))
+    opts.set_write_timeout(settings.get(Option::WRITE_TIMEOUT).
+           get_uint() * 1000); // millisec to microsec
+
   // Set basic options
 
   if (settings.has_option(Option::DB))

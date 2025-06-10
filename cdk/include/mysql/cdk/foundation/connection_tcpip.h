@@ -201,6 +201,10 @@ class Socket_base::Options
     // By default the timeout is 10 seconds
     uint64_t m_timeout_usec = DEFAULT_CN_TIMEOUT_US;
 
+    // By default the read/write timeouts are not set
+    uint64_t m_read_timeout_usec = (uint64_t)(-1);
+    uint64_t m_write_timeout_usec = (uint64_t)(-1);
+
   public:
 
     Options()
@@ -215,6 +219,32 @@ class Socket_base::Options
     void set_connection_timeout(uint64_t timeout_usec)
     {
       m_timeout_usec = timeout_usec;
+    }
+
+    uint64_t get_read_timeout() const
+    { return m_read_timeout_usec; }
+
+    void set_read_timeout(uint64_t timeout_usec)
+    {
+      m_read_timeout_usec = timeout_usec;
+    }
+
+    bool has_read_timeout() const
+    {
+      return (uint64_t)(-1) != m_read_timeout_usec;
+    }
+
+    uint64_t get_write_timeout() const
+    { return m_write_timeout_usec; }
+
+    void set_write_timeout(uint64_t timeout_usec)
+    {
+      m_write_timeout_usec = timeout_usec;
+    }
+
+    bool has_write_timeout() const
+    {
+      return (uint64_t)(-1) != m_write_timeout_usec;
     }
 };
 

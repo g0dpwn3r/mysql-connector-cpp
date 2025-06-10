@@ -258,8 +258,23 @@ private:
   template <int OPT, typename T>
   void set_option(const T &val)
   {
-    if (OPT == Session_option_impl::CONNECT_TIMEOUT)
-      throw_error("The connection timeout value must be a positive integer (including 0)");
+    switch (OPT)
+    {
+      case Session_option_impl::CONNECT_TIMEOUT:
+        throw_error("The connection timeout value must be a positive "
+                    "integer (including 0)");
+        break; // Add break to keep compiler happy.
+      case Session_option_impl::READ_TIMEOUT:
+        throw_error("The read timeout value must be a positive "
+                    "integer (including 0)");
+        break;
+      case Session_option_impl::WRITE_TIMEOUT:
+        throw_error("The write timeout value must be a positive "
+                    "integer (including 0)");
+        break;
+      default:
+        break;
+    }
 
     add_option(OPT, val);
   }
@@ -796,6 +811,24 @@ Settings_impl::Setter::set_option<Settings_impl::Session_option_impl::CONNECT_TI
   add_option(Settings_impl::Session_option_impl::CONNECT_TIMEOUT, timeout);
 }
 
+template <>
+inline void
+Settings_impl::Setter::set_option<Settings_impl::Session_option_impl::READ_TIMEOUT>(
+  const uint64_t &timeout
+)
+{
+  add_option(Settings_impl::Session_option_impl::READ_TIMEOUT, timeout);
+}
+
+template <>
+inline void
+Settings_impl::Setter::set_option<Settings_impl::Session_option_impl::WRITE_TIMEOUT>(
+  const uint64_t &timeout
+)
+{
+  add_option(Settings_impl::Session_option_impl::WRITE_TIMEOUT, timeout);
+}
+
 template<>
 inline void
 Settings_impl::Setter::set_option<Settings_impl::Session_option_impl::SSL_MODE>(
@@ -1197,8 +1230,11 @@ void Settings_impl::Setter::num(uint64_t val)
   if (m_cur_opt == Session_option_impl::CONNECT_TIMEOUT)
     return set_option<Session_option_impl::CONNECT_TIMEOUT>(val);
 
-  if (m_cur_opt == Session_option_impl::CONNECT_TIMEOUT)
-    return set_option<Session_option_impl::CONNECT_TIMEOUT>(val);
+  if (m_cur_opt == Session_option_impl::READ_TIMEOUT)
+    return set_option<Session_option_impl::READ_TIMEOUT>(val);
+
+  if (m_cur_opt == Session_option_impl::WRITE_TIMEOUT)
+    return set_option<Session_option_impl::WRITE_TIMEOUT>(val);
 
   if (m_cur_opt < 0 && !check_num_limits<int64_t>(val))
     throw_error("Option ... value too big");
