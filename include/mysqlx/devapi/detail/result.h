@@ -238,7 +238,7 @@ public:
   friend Result_detail;
   friend RowResult;
 
-  struct INTERNAL Access;
+  struct MYSQLX_INTERNAL Access;
   friend Access;
 };
 

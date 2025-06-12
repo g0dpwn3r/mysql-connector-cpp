@@ -165,16 +165,16 @@ MYSQLX_ABI_END(2,0)
 
 #if defined CONCPP_BUILD_SHARED
   #define PUBLIC_API  DLL_EXPORT
-  #define INTERNAL    DLL_LOCAL
+  #define MYSQLX_INTERNAL    DLL_LOCAL
 #elif defined CONCPP_BUILD_STATIC
   #define PUBLIC_API
-  #define INTERNAL
+  #define MYSQLX_INTERNAL
 #elif !defined STATIC_CONCPP
   #define PUBLIC_API  DLL_IMPORT
-  #define INTERNAL
+  #define MYSQLX_INTERNAL
 #else
   #define PUBLIC_API
-  #define INTERNAL
+  #define MYSQLX_INTERNAL
 #endif
 
 

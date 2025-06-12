@@ -83,7 +83,7 @@ class PUBLIC_API DbDoc
 {
   // TODO: move PUBLIC_API stuff to a detail class
 
-  class INTERNAL Impl;
+  class MYSQLX_INTERNAL Impl;
 
 DLL_WARNINGS_PUSH
 
@@ -91,7 +91,7 @@ DLL_WARNINGS_PUSH
 
 DLL_WARNINGS_POP
 
-  INTERNAL DbDoc(const std::shared_ptr<Impl>&);
+  MYSQLX_INTERNAL DbDoc(const std::shared_ptr<Impl>&);
 
   const char* get_json() const;
 
@@ -557,7 +557,7 @@ public:
   friend mysqlx::string;
   ///@endcond IGNORE
 
-  struct INTERNAL Access;
+  struct MYSQLX_INTERNAL Access;
   friend Access;
 };
 

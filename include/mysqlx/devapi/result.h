@@ -488,7 +488,7 @@ public:
   {}
 
   friend RowResult;
-  struct INTERNAL Access;
+  struct MYSQLX_INTERNAL Access;
   friend Access;
 };
 
