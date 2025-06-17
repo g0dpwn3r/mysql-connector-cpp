@@ -45,7 +45,7 @@ VS_VERSION_INFO VERSIONINFO
 BEGIN
     BLOCK "StringFileInfo"
     BEGIN
-        BLOCK "040904b0"
+        BLOCK "040904E4"
         BEGIN
             VALUE "CompanyName", "Oracle Corporation\0"
             VALUE "ProductName", "MySQL Connector/C++\0"
