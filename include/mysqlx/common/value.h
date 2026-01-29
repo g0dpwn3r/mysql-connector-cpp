@@ -35,6 +35,7 @@
 #include "api.h"
 #include "error.h"
 #include "util.h"
+#include <cstdint>
 
 PUSH_SYS_WARNINGS
 #include <string>
