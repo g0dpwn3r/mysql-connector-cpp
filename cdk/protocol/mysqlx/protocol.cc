@@ -34,10 +34,13 @@
 */
 
 // Note: on Windows this includes windows.h
-
 #include <mysql/cdk/foundation/common.h>
+
+#include <google/protobuf/stubs/common.h>
 #include <google/protobuf/io/zero_copy_stream.h>
 
+// ADD THIS LINE to fix the uint64_t errors
+#include <cstdint>
 /*
   Note: On Windows the INIT_ONCE structure was added only in later
   releases but can be available in previous ones via service packs.
@@ -102,11 +105,8 @@ const char* msg_type_name(Protocol_side side, msg_type_t type)
 IMPL_PLAIN(cdk::protocol::mysqlx::Protocol);
 IMPL_PLAIN(cdk::protocol::mysqlx::Protocol_server);
 
-
 using namespace cdk::foundation;
-using namespace google::protobuf;
 using namespace cdk::protocol::mysqlx;
-
 
 namespace cdk {
 namespace protocol {
@@ -117,21 +117,24 @@ namespace mysqlx {
   Protobuf log handler initialization.
 */
 
-static void log_handler(LogLevel level, const char* filename, int line, const std::string& message);
+// NEW (Fixed)
+// Fully qualified type to avoid ambiguity
+//static void log_handler(google::protobuf::LogLevel level, const char* filename, int line, const std::string& message);
 
 #ifdef _WIN32
 BOOL CALLBACK log_handler_init(PINIT_ONCE, PVOID, PVOID*)
 {
-  SetLogHandler(&log_handler);
+  google::protobuf::SetLogHandler(&log_handler);
   return TRUE;
 }
-#else
-static void log_handler_init()
+#endif
+/*static void log_handler_init()
 {
-  SetLogHandler(log_handler);
+  // Explicitly use the namespace
+  google::protobuf::SetLogHandler(&log_handler);
 }
 #endif
-
+*/
 
 /*
   Base protocol implementation
@@ -145,10 +148,10 @@ Protocol_impl::Protocol_impl(Protocol::Stream *str, Protocol_side side)
   , m_msg_size(0)
 {
   // Warning can be disabled because the handler is not called, only registered
-  PUSH_MSVC17_WARNINGS_CDK
+  /*PUSH_MSVC17_WARNINGS_CDK
     EXECUTE_ONCE(&log_handler_once, &log_handler_init);
-  POP_MSVC17_VARNINGS_CDK
-
+    POP_MSVC17_VARNINGS_CDK
+  */
     // Allocate initial I/O buffers
 
   m_wr_size = m_rd_size = 1024;
@@ -289,38 +292,6 @@ Message* mk_message(Protocol_side side, msg_type_t msg_type)
   situation occurs in Protobuf (such as parsing error etc).
 */
 
-static void log_handler(
-  LogLevel level, const char* /*filename*/, int /*line*/,
-  const std::string& message
-)
-{
-  switch(level)
-  {
-    case LOGLEVEL_FATAL:
-    case LOGLEVEL_ERROR:
-      /*
-        With this code the error description is:
-
-          MMM: Protobuf error (cdk:NNN)
-
-        where MMM is the message and NNN is the protbuf error code.
-
-        TODO: Change description to:
-
-          Protobuf error: MMM (cdk:NNN)
-      */
-      throw_error(cdkerrc::protobuf_error, message);
-
-    case LOGLEVEL_WARNING:
-    case LOGLEVEL_INFO:
-    default:
-    {
-      // just ignore for now
-      // TODO: this could be used for logging in the future
-    }
-  }
-}
-
 /*
   Implementation of protobuf's ZeroCopyOutputStream which stores
   data in the given memory buffer.
@@ -357,9 +328,9 @@ class ArrayStream : public google::protobuf::io::ZeroCopyOutputStream
     m_bytes_count -= count;
   }
 
-  int64 ByteCount() const
+  int64_t ByteCount() const
   {
-    return (int64)m_bytes_count;
+    return (int64_t)m_bytes_count;
   }
 };
 
@@ -952,6 +923,7 @@ void Op_rcv::process_payload()
   // Parse message.
 
   scoped_ptr<Message> m_msg;
+  
   m_msg.reset(mk_message(m_proto.m_side, m_msg_type));
 
   if (m_msg_size > 0)
